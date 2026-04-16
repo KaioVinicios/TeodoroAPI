@@ -39,8 +39,15 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework_simplejwt",
     "rest_framework_simplejwt.token_blacklist",
+    "drf_spectacular",
     "apps.authentication",
     "apps.medical_supply_label",
+    "apps.account",
+    "apps.inspection",
+    "apps.organization",
+    "apps.supply",
+    "apps.supply_lot",
+    "apps.core",
 ]
 
 MIDDLEWARE = [
@@ -131,7 +138,7 @@ SIMPLE_JWT = {
 }
 
 REST_FRAMEWORK = {
-    # "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",  # Maybe change to CookieJWTAuthentication
     ),
@@ -139,3 +146,4 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
     ],
 }
+
