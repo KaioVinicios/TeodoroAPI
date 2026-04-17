@@ -9,7 +9,7 @@ system_patterns = [
 ]
 api_patterns = [
     path("authentication/", include("apps.authentication.urls")),
-    path("medical-supply-labels/", include("apps.medical_supply_label.urls")),
+    path("medical-supply-labels/", include("apps.supply_label.urls")),
     path("authentication/", include("apps.authentication.urls")),
 ]
 

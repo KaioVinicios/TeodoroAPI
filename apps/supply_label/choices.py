@@ -1,6 +1,6 @@
 from django.utils.translation import gettext_lazy as _
 
-MEDICAL_SUPPLY_TYPES = [
+SUPPLY_LABEL_TYPES = [
     ("medication", _("Medication")),
     ("equipment", _("Equipment")),
     ("sterilization", _("Sterilization")),
@@ -9,7 +9,7 @@ MEDICAL_SUPPLY_TYPES = [
     ("other", _("Other")),
 ]
 
-MEDICAL_SUPPLY_CATEGORIES = [
+SUPPLY_LABEL_CATEGORIES = [
     ("disposable", _("Disposable")),
     ("reusable", _("Reusable")),
     ("implantable", _("Implantable")),

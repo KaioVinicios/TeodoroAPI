@@ -1,21 +1,20 @@
 from django.shortcuts import get_object_or_404
+from apps.supply_label.models import SupplyLabel
 
-from .models import MedicalSupplyLabel
 
-
-class MedicalSupplyLabelServices:
+class SupplyLabelServices:
 
     @staticmethod
     def list_all():
-        return MedicalSupplyLabel.objects.all()
+        return SupplyLabel.objects.all()
 
     @staticmethod
     def get(pk):
-        return get_object_or_404(MedicalSupplyLabel, pk=pk)
+        return get_object_or_404(SupplyLabel, pk=pk)
 
     @staticmethod
     def create(validated_data):
-        return MedicalSupplyLabel.objects.create(**validated_data)
+        return SupplyLabel.objects.create(**validated_data)
 
     @staticmethod
     def update(instance, validated_data):
@@ -26,5 +25,5 @@ class MedicalSupplyLabelServices:
 
     @staticmethod
     def delete(pk):
-        supply_label = get_object_or_404(MedicalSupplyLabel, pk=pk)
+        supply_label = get_object_or_404(SupplyLabel, pk=pk)
         supply_label.delete()

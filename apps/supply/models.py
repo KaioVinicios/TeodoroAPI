@@ -1,13 +1,13 @@
 from django.db import models
 from apps.core.models import TimeStampedModel
 from django.utils.translation import gettext_lazy as _
-from apps.medical_supply_label.models import MedicalSupplyLabel
+from apps.supply_label.models import SupplyLabel
 from apps.supply.choices import SUPPLY_STATUSES, UNIT_OF_MEASURE_CHOICES
 from apps.supply.validators import validate_status, validate_unit_of_measure
 
 class Supply(TimeStampedModel):
     supply_label = models.ForeignKey(
-        MedicalSupplyLabel,
+        SupplyLabel,
         on_delete=models.PROTECT,
         related_name="supplies",
         verbose_name=_("supply label"),

@@ -41,7 +41,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     "drf_spectacular",
     "apps.authentication",
-    "apps.medical_supply_label",
+    "apps.supply_label",
     "apps.account",
     "apps.inspection",
     "apps.organization",
