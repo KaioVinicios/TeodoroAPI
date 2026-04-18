@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     "apps.supply",
     "apps.supply_lot",
     "apps.core",
+    "apps.request",
 ]
 
 MIDDLEWARE = [
