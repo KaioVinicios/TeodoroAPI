@@ -6,8 +6,8 @@ from apps.supply_label.validators import (
     validate_supply_type,
 )
 from apps.supply_label.choices import (
-    SUPPLY_LABEL_TYPES,
-    SUPPLY_LABEL_CATEGORIES,
+    SupplyLabelType,
+    SupplyLabelCategory,
 )
 
 
@@ -21,7 +21,7 @@ class SupplyLabel(TimeStampedModel):
 
     supply_label_type = models.CharField(
         max_length=50,
-        choices=SUPPLY_LABEL_TYPES,
+        choices=SupplyLabelType.choices,
         blank=False,
         null=False,
         verbose_name=_("supply type"),
@@ -30,7 +30,7 @@ class SupplyLabel(TimeStampedModel):
 
     category = models.CharField(
         max_length=50,
-        choices=SUPPLY_LABEL_CATEGORIES,
+        choices=SupplyLabelCategory.choices,
         blank=False,
         null=False,
         verbose_name=_("category"),
@@ -40,6 +40,7 @@ class SupplyLabel(TimeStampedModel):
     details = models.TextField(
         verbose_name=_("details"),
         blank=True,
+        max_length=100,
         null=True,
     )
 

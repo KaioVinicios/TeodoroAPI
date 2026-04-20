@@ -1,12 +1,10 @@
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
-from apps.supply_lot.choices import SUPPLY_LOT_STATUSES
+from apps.supply_lot.choices import SupplyLotStatus
 
-# Why use this notation?
-VALID_STATUSES = [choice[0] for choice in SUPPLY_LOT_STATUSES]
 
 def validate_status(value):
-    if value not in VALID_STATUSES:
+    if value not in SupplyLotStatus.values:
         raise ValidationError(_("Invalid supply lot status."))
 
 

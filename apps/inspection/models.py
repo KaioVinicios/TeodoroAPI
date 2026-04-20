@@ -10,9 +10,6 @@ class Inspection(TimeStampedModel):
         default=False,
         verbose_name=_("is complete"),
     )
-    date = models.DateField(
-        verbose_name=_("date"),
-    )
     completion_date = models.DateField(
         null=True,
         blank=True,
@@ -29,7 +26,6 @@ class Inspection(TimeStampedModel):
     class Meta:
         verbose_name = _("inspection")
         verbose_name_plural = _("inspections")
-        ordering = ["-date"]
 
     def __str__(self):
         status = _("complete") if self.is_complete else _("pending")

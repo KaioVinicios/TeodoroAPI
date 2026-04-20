@@ -1,12 +1,11 @@
 import re
-from apps.account.choices import ACCOUNT_TYPES
+from apps.account.choices import AccountType
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
-VALID_ACCOUNT_TYPES = [choice[0] for choice in ACCOUNT_TYPES]
 
 def validate_account_type(value):
-    if value not in VALID_ACCOUNT_TYPES:
+    if value not in AccountType.values:
         raise ValidationError(_("Invalid account type."))
 
 

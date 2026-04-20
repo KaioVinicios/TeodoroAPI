@@ -2,7 +2,7 @@ from django.db import models
 from apps.core.models import TimeStampedModel
 from django.utils.translation import gettext_lazy as _
 from apps.supply_label.models import SupplyLabel
-from apps.supply.choices import SUPPLY_STATUSES, UNIT_OF_MEASURE_CHOICES
+from apps.supply.choices import SupplyStatus, UnitOfMeasure
 from apps.supply.validators import validate_status, validate_unit_of_measure
 
 class Supply(TimeStampedModel):
@@ -14,8 +14,8 @@ class Supply(TimeStampedModel):
     )
     status = models.CharField(
         max_length=20,
-        choices=SUPPLY_STATUSES,
-        default="available",
+        choices=SupplyStatus.choices,
+        default=SupplyStatus.AVAILABLE,
         verbose_name=_("status"),
         validators=[validate_status],
     )
@@ -24,7 +24,7 @@ class Supply(TimeStampedModel):
     )
     unit_of_measure = models.CharField(
         max_length=20,
-        choices=UNIT_OF_MEASURE_CHOICES,
+        choices=UnitOfMeasure.choices,
         verbose_name=_("unit of measure"),
         validators=[validate_unit_of_measure],
     )

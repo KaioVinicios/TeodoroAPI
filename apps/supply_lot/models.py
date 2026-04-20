@@ -1,7 +1,7 @@
 from django.db import models
 from apps.core.models import TimeStampedModel
 from django.utils.translation import gettext_lazy as _
-from apps.supply_lot.choices import SUPPLY_LOT_STATUSES
+from apps.supply_lot.choices import SupplyLotStatus
 from apps.supply_lot.validators import (
     validate_manufacturing_before_expiration,
     validate_status,
@@ -11,8 +11,8 @@ from apps.supply_lot.validators import (
 class SupplyLot(TimeStampedModel):
     status = models.CharField(
         max_length=20,
-        choices=SUPPLY_LOT_STATUSES,
-        default="pending",
+        choices=SupplyLotStatus.choices,
+        default=SupplyLotStatus.PENDING,
         verbose_name=_("status"),
         validators=[validate_status],
     )

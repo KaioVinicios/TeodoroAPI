@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from apps.core.models import TimeStampedModel
-from apps.account.choices import ACCOUNT_TYPES
+from apps.account.choices import AccountType
 from apps.organization.models import Organization
 from django.utils.translation import gettext_lazy as _
 from apps.core.validators import validate_phone_number
@@ -17,11 +17,11 @@ class Account(TimeStampedModel):
     )
     account_type = models.CharField(
         max_length=20,
-        choices=ACCOUNT_TYPES,
+        choices=AccountType.choices,
         verbose_name=_("account type"),
         validators=[validate_account_type],
     )
-    organization = models.OneToOneField(
+    organization = models.ForeignKey(
         Organization,
         on_delete=models.SET_NULL,
         null=True,

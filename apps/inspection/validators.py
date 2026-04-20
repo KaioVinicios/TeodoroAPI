@@ -1,10 +1,10 @@
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
-from apps.account.choices import ACCOUNT_TYPES
+from apps.account.choices import AccountType
 
 User = get_user_model()
-AUDITOR_TYPE = next(value for value, _ in ACCOUNT_TYPES if value == "auditor")
+
 
 def validate_responsible_is_auditor(user_id):
     try:
@@ -13,7 +13,7 @@ def validate_responsible_is_auditor(user_id):
     except (User.DoesNotExist, User.account.RelatedObjectDoesNotExist):
         raise ValidationError(_("Responsible user must have an account."))
 
-    if account.account_type != AUDITOR_TYPE:
+    if account.account_type != AccountType.AUDITOR:
         raise ValidationError(
             _("Responsible must be a user with account type 'auditor'.")
         )

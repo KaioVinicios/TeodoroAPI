@@ -1,9 +1,10 @@
+from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-SUPPLY_LOT_STATUSES = [
-    ("pending", _("Pending")),
-    ("approved", _("Approved")),
-    ("rejected", _("Rejected")),
-    ("quarantine", _("Quarantine")),
-    ("expired", _("Expired")),
-]
+
+class SupplyLotStatus(models.TextChoices):
+    PENDING = "pending", _("Pending")
+    APPROVED = "approved", _("Approved")
+    REJECTED = "rejected", _("Rejected")
+    QUARANTINE = "quarantine", _("Quarantine")
+    EXPIRED = "expired", _("Expired")

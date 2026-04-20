@@ -1,19 +1,20 @@
+from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-SUPPLY_LABEL_TYPES = [
-    ("medication", _("Medication")),
-    ("equipment", _("Equipment")),
-    ("sterilization", _("Sterilization")),
-    ("nutrition", _("Nutrition")),
-    ("blood_product", _("Blood Product")),
-    ("other", _("Other")),
-]
 
-SUPPLY_LABEL_CATEGORIES = [
-    ("disposable", _("Disposable")),
-    ("reusable", _("Reusable")),
-    ("implantable", _("Implantable")),
-    ("diagnostic", _("Diagnostic")),
-    ("therapeutic", _("Therapeutic")),
-    ("other", _("Other")),
-]
+class SupplyLabelType(models.TextChoices):
+    MEDICATION = "medication", _("Medication")
+    EQUIPMENT = "equipment", _("Equipment")
+    STERILIZATION = "sterilization", _("Sterilization")
+    NUTRITION = "nutrition", _("Nutrition")
+    BLOOD_PRODUCT = "blood_product", _("Blood Product")
+    OTHER = "other", _("Other")
+
+
+class SupplyLabelCategory(models.TextChoices):
+    DISPOSABLE = "disposable", _("Disposable")
+    REUSABLE = "reusable", _("Reusable")
+    IMPLANTABLE = "implantable", _("Implantable")
+    DIAGNOSTIC = "diagnostic", _("Diagnostic")
+    THERAPEUTIC = "therapeutic", _("Therapeutic")
+    OTHER = "other", _("Other")
