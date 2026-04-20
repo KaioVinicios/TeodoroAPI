@@ -4,6 +4,7 @@ from apps.supply_label.models import SupplyLabel
 from apps.supply_label.serializers import SupplyLabelSerializer
 from apps.supply_label.services import SupplyLabelServices
 from apps.supply_label.validators import validate_supply_type, validate_category
+from apps.supply_label.choices import SupplyLabelType, SupplyLabelCategory
 
 
 class SupplyLabelValidatorTests(TestCase):
@@ -19,15 +20,7 @@ class SupplyLabelValidatorTests(TestCase):
 
     def test_valid_supply_type_passes(self):
         """Every declared supply type must be accepted without raising."""
-        valid_types = [
-            "medication",
-            "equipment",
-            "sterilization",
-            "nutrition",
-            "blood_product",
-            "other",
-        ]
-        for supply_type in valid_types:
+        for supply_type in SupplyLabelType.values:
             with self.subTest(supply_type=supply_type):
                 try:
                     validate_supply_type(supply_type)
@@ -50,15 +43,7 @@ class SupplyLabelValidatorTests(TestCase):
 
     def test_valid_category_passes(self):
         """Every declared category must be accepted without raising."""
-        valid_categories = [
-            "disposable",
-            "reusable",
-            "implantable",
-            "diagnostic",
-            "therapeutic",
-            "other",
-        ]
-        for category in valid_categories:
+        for category in SupplyLabelCategory.values:
             with self.subTest(category=category):
                 try:
                     validate_category(category)
@@ -105,9 +90,7 @@ class SupplyLabelSerializerTests(TestCase):
 
     def test_details_is_optional(self):
         """``details`` is an optional field; omitting it must still pass validation."""
-        payload = self._valid_payload()
-        payload.pop("details")
-        serializer = SupplyLabelSerializer(data=payload)
+        serializer = SupplyLabelSerializer(data=self._valid_payload(details=None))
         self.assertTrue(serializer.is_valid(), serializer.errors)
 
     def test_missing_name_is_invalid(self):
@@ -364,9 +347,7 @@ class SupplyLabelListAPITests(TestCase):
 
     def test_post_without_details_returns_201(self):
         """``details`` is optional; omitting it must still produce a 201."""
-        payload = self._valid_payload()
-        payload.pop("details")
-        response = self.client.post(self.url, payload, format="json")
+        response = self.client.post(self.url, self._valid_payload(details=None), format="json")
         self.assertEqual(response.status_code, 201, response.data)
         self.assertEqual(SupplyLabel.objects.count(), 1)
 
