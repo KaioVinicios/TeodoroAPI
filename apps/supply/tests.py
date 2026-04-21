@@ -168,11 +168,13 @@ class SupplyServiceTests(TestCase):
             SupplyServices.delete(9999)
 
     def test_list_all_uses_select_related(self):
-        """Ensures supply_label is prefetched (no extra queries)."""
+        """Ensures supply_label is fetched in a single query (no N+1)."""
         make_supply(self.label)
-        qs = SupplyServices.list_all()
-        with self.assertNumQueries(0):
-            _ = qs[0].supply_label.name
+        make_supply(self.label, status=SupplyStatus.RESERVED)
+        with self.assertNumQueries(1):
+            supplies = list(SupplyServices.list_all())
+            for supply in supplies:
+                _ = supply.supply_label.name
 
 
 # ── Supply API tests ──────────────────────────────────────────────────────────
