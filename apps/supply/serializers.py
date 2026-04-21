@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from apps.supply_label.serializers import SupplyLabelSerializer
 
 from apps.supply.models import Supply, SupplyLabel
 from apps.supply.validators import (
@@ -7,30 +8,7 @@ from apps.supply.validators import (
     validate_quantity,
 )
 
-
-class SupplyLabelSerializer(serializers.ModelSerializer):
-    id = serializers.IntegerField(read_only=True)
-
-    class Meta:
-        model = SupplyLabel
-        fields = [
-            "id",
-            "name",
-            "supply_label_type",
-            "category",
-            "details",
-            "created_at",
-            "updated_at",
-        ]
-        read_only_fields = ["id", "created_at", "updated_at"]
-
-    def validate_supply_label_type(self, value):
-        validate_supply_label_type(value)
-        return value
-
-
 class SupplySerializer(serializers.ModelSerializer):
-    id = serializers.IntegerField(read_only=True)
 
     supply_label = serializers.PrimaryKeyRelatedField(
         queryset=SupplyLabel.objects.all(),
@@ -42,18 +20,7 @@ class SupplySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Supply
-        fields = [
-            "id",
-            "supply_label",
-            "supply_label_detail",
-            "status",
-            "description",
-            "quantity",
-            "unit_of_measure",
-            "created_at",
-            "updated_at",
-        ]
-        read_only_fields = ["id", "supply_label_detail", "created_at", "updated_at"]
+        fields = "__all__"
 
     def validate_status(self, value):
         validate_supply_status(value)

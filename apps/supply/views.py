@@ -10,10 +10,10 @@ from drf_spectacular.utils import (
     OpenApiResponse,
 )
 
-from apps.supply.services import SupplyLabelServices, SupplyServices
-from apps.supply.serializers import SupplyLabelSerializer, SupplySerializer
+from apps.supply.services import SupplyServices
+from apps.supply.serializers import SupplySerializer
+from apps.supply_label.serializers import SupplyLabelSerializer
 from apps.account.permissions import IsNotCustomer
-
 
 # ── Envelope helpers ──────────────────────────────────────────────────────────
 
@@ -39,123 +39,6 @@ ErrorResponseSerializer = inline_serializer(
     name="SupplyErrorResponse",
     fields={"error": serializers.CharField()},
 )
-
-
-# ── Supply Label views ────────────────────────────────────────────────────────
-
-@extend_schema(tags=["supply-labels"])
-@extend_schema_view(
-    get=extend_schema(
-        operation_id="supply_labels_list",
-        summary="List supply labels",
-        description="Returns all supply labels registered in the system.",
-        responses={
-            200: SupplyLabelListEnvelopeSerializer,
-            401: OpenApiResponse(description="Authentication credentials were not provided."),
-        },
-    ),
-    post=extend_schema(
-        operation_id="supply_labels_create",
-        summary="Create supply label",
-        description="Creates a new supply label. Restricted to non-customer users.",
-        request=SupplyLabelSerializer,
-        responses={
-            201: SupplyLabelEnvelopeSerializer,
-            400: OpenApiResponse(description="Validation error."),
-            401: OpenApiResponse(description="Authentication credentials were not provided."),
-            403: OpenApiResponse(description="Customers cannot access this resource."),
-        },
-    ),
-)
-class SupplyLabelListAPIView(APIView):
-    serializer_class = SupplyLabelSerializer
-
-    def get_permissions(self):
-        if self.request.method == "POST":
-            return [IsAuthenticated(), IsNotCustomer()]
-        return [IsAuthenticated()]
-
-    def get(self, request):
-        labels = SupplyLabelServices.list_all()
-        serializer = SupplyLabelSerializer(labels, many=True)
-        return Response({"data": serializer.data}, status=status.HTTP_200_OK)
-
-    def post(self, request):
-        serializer = SupplyLabelSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        label = SupplyLabelServices.create(serializer.validated_data)
-        response = SupplyLabelSerializer(label)
-        return Response({"data": response.data}, status=status.HTTP_201_CREATED)
-
-
-@extend_schema(tags=["supply-labels"])
-@extend_schema_view(
-    get=extend_schema(
-        operation_id="supply_labels_retrieve",
-        summary="Retrieve supply label",
-        responses={
-            200: SupplyLabelEnvelopeSerializer,
-            401: OpenApiResponse(description="Authentication credentials were not provided."),
-            404: OpenApiResponse(response=ErrorResponseSerializer, description="Supply label not found."),
-        },
-    ),
-    patch=extend_schema(
-        operation_id="supply_labels_partial_update",
-        summary="Partially update supply label",
-        request=SupplyLabelSerializer,
-        responses={
-            200: SupplyLabelEnvelopeSerializer,
-            400: OpenApiResponse(description="Validation error."),
-            401: OpenApiResponse(description="Authentication credentials were not provided."),
-            403: OpenApiResponse(description="Customers cannot access this resource."),
-            404: OpenApiResponse(response=ErrorResponseSerializer, description="Supply label not found."),
-        },
-    ),
-    delete=extend_schema(
-        operation_id="supply_labels_destroy",
-        summary="Delete supply label",
-        responses={
-            204: OpenApiResponse(description="Supply label deleted."),
-            401: OpenApiResponse(description="Authentication credentials were not provided."),
-            403: OpenApiResponse(description="Customers cannot access this resource."),
-            404: OpenApiResponse(response=ErrorResponseSerializer, description="Supply label not found."),
-        },
-    ),
-)
-class SupplyLabelDetailAPIView(APIView):
-    serializer_class = SupplyLabelSerializer
-
-    def get_permissions(self):
-        if self.request.method in ("PATCH", "DELETE"):
-            return [IsAuthenticated(), IsNotCustomer()]
-        return [IsAuthenticated()]
-
-    def get(self, request, pk):
-        try:
-            label = SupplyLabelServices.get(pk)
-        except Http404:
-            return Response({"error": "Supply label not found"}, status=status.HTTP_404_NOT_FOUND)
-        serializer = SupplyLabelSerializer(label)
-        return Response({"data": serializer.data}, status=status.HTTP_200_OK)
-
-    def patch(self, request, pk):
-        try:
-            label = SupplyLabelServices.get(pk)
-        except Http404:
-            return Response({"error": "Supply label not found"}, status=status.HTTP_404_NOT_FOUND)
-        serializer = SupplyLabelSerializer(label, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        updated = SupplyLabelServices.update(label, serializer.validated_data)
-        response = SupplyLabelSerializer(updated)
-        return Response({"data": response.data}, status=status.HTTP_200_OK)
-
-    def delete(self, request, pk):
-        try:
-            SupplyLabelServices.delete(pk)
-        except Http404:
-            return Response({"error": "Supply label not found"}, status=status.HTTP_404_NOT_FOUND)
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
 
 # ── Supply views ──────────────────────────────────────────────────────────────
 
