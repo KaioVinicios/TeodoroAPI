@@ -185,7 +185,7 @@ class InspectionDetailAPIView(APIView):
         try:
             inspection = InspectionServices.get(pk)
         except Http404:
-            return response(
+            return Response(
                 {"error": "Inspection not found."}, status=status.HTTP_404_NOT_FOUND
             )
 
