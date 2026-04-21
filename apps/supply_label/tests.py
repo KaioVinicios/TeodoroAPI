@@ -1,6 +1,7 @@
 from django.test import TestCase
 from django.http import Http404
 from rest_framework.test import APIClient
+from django.contrib.auth.models import User
 from apps.supply_label.models import SupplyLabel
 from apps.supply_label.serializers import SupplyLabelSerializer
 from apps.supply_label.services import SupplyLabelServices
@@ -257,6 +258,12 @@ class SupplyLabelListAPITests(TestCase):
     def setUp(self):
         self.client = APIClient()
         self.url = "/api/supply-labels/"
+        self.user = User.objects.create_user(
+            username="supplylabeluser",
+            password="Pw12345!",
+            email="supplylabeluser@example.com",
+        )
+        self.client.force_authenticate(self.user)
 
     def _valid_payload(self, **overrides):
         payload = {
@@ -342,7 +349,9 @@ class SupplyLabelListAPITests(TestCase):
 
     def test_post_without_details_returns_201(self):
         """``details`` is optional; omitting it must still produce a 201."""
-        response = self.client.post(self.url, self._valid_payload(details=None), format="json")
+        response = self.client.post(
+            self.url, self._valid_payload(details=None), format="json"
+        )
         self.assertEqual(response.status_code, 201, response.data)
         self.assertEqual(SupplyLabel.objects.count(), 1)
 
@@ -359,6 +368,12 @@ class SupplyLabelDetailAPITests(TestCase):
 
     def setUp(self):
         self.client = APIClient()
+        self.user = User.objects.create_user(
+            username="supplylabeldetailuser",
+            password="Pw12345!",
+            email="supplylabeldetailuser@example.com",
+        )
+        self.client.force_authenticate(self.user)
         self.supply_label = SupplyLabel.objects.create(
             name="Seringa Descartável",
             supply_label_type="equipment",
