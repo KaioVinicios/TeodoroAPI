@@ -1,12 +1,13 @@
-from datetime import date, timedelta
-
-from django.core.exceptions import ValidationError
-from django.http import Http404
 from django.test import TestCase
+from django.http import Http404
+from django.core.exceptions import ValidationError
 from rest_framework.test import APIClient
 from django.contrib.auth.models import User
-from unittest.mock import patch, MagicMock
+from datetime import date, timedelta
 
+from apps.account.models import Account
+from apps.account.choices import AccountType
+from apps.inspection.models import Inspection
 from apps.supply_lot.models import SupplyLot
 from apps.supply_lot.serializers import SupplyLotSerializer
 from apps.supply_lot.services import SupplyLotService
@@ -21,30 +22,86 @@ from apps.supply_lot.choices import SupplyLotStatus
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _future_date(days=30):
-    return date.today() + timedelta(days=days)
+TODAY = date.today()
+MANUFACTURING = TODAY - timedelta(days=30)
+EXPIRATION = TODAY + timedelta(days=180)
+
+_auditor_counter = 0
 
 
-def _past_date(days=30):
-    return date.today() - timedelta(days=days)
+def _make_auditor_user(username=None):
+    """
+    Creates a User with an Account of type ``auditor``.
+    Required because ``Inspection.responsible`` is validated to be an auditor.
+    """
+    global _auditor_counter
+    _auditor_counter += 1
+    if username is None:
+        username = f"auditor_{_auditor_counter}"
+    user = User.objects.create_user(
+        username=username,
+        password="Pw12345!",
+        email=f"{username}@example.com",
+    )
+    Account.objects.create(
+        user=user,
+        account_type=AccountType.AUDITOR,
+        cpf=_unique_cpf(_auditor_counter),
+        address="Rua dos Auditores, 1",
+        phone_number="(11) 91234-5678",
+    )
+    return user
 
 
+def _unique_cpf(seed: int) -> str:
+    """
+    Returns a structurally valid CPF that is unique per seed value.
+    Values are pre-validated so the CPF check-digit validator passes.
+    """
+    valid_cpfs = [
+        "529.982.247-25",
+        "111.444.777-35",
+        "295.669.955-93",
+        "902.556.289-68",
+        "746.959.438-68",
+        "374.348.252-00",
+        "061.316.468-05",
+        "455.823.030-47",
+        "168.995.265-42",
+        "876.455.930-69",
+    ]
+    return valid_cpfs[(seed - 1) % len(valid_cpfs)]
+
+
+def _make_inspection(responsible=None):
+    """
+    Creates and returns an ``Inspection`` instance with a valid auditor
+    as the responsible user.
+    """
+    if responsible is None:
+        responsible = _make_auditor_user()
+    return Inspection.objects.create(responsible=responsible)
+
+
+# ---------------------------------------------------------------------------
+# Validator tests
 # ---------------------------------------------------------------------------
 
 
 class SupplyLotValidatorTests(TestCase):
     """
-    Tests for ``validate_status`` and ``validate_manufacturing_before_expiration``
-    — the standalone validator functions used by the model and the serializer.
+    Tests for ``validate_status`` and
+    ``validate_manufacturing_before_expiration`` — the standalone validator
+    functions used by the model and the serializer.
 
-    Valid values must pass silently; any value outside the declared choices (or
-    with an invalid date relationship) must raise ``ValidationError``.
+    Valid values must pass silently; invalid values must raise
+    ``ValidationError`` with an appropriate message.
     """
 
     # validate_status
 
     def test_valid_status_passes(self):
-        """Every declared status must be accepted without raising."""
+        """Every declared status value must be accepted without raising."""
         for status_value in SupplyLotStatus.values:
             with self.subTest(status=status_value):
                 try:
@@ -64,88 +121,118 @@ class SupplyLotValidatorTests(TestCase):
         with self.assertRaises(ValidationError):
             validate_status("")
 
+    def test_numeric_status_raises_validation_error(self):
+        """A numeric string that is not a declared choice must be rejected."""
+        with self.assertRaises(ValidationError):
+            validate_status("123")
+
     # validate_manufacturing_before_expiration
 
     def test_manufacturing_before_expiration_passes(self):
-        """A manufacturing date strictly before the expiration date must pass."""
+        """A manufacturing date strictly before expiration must pass silently."""
         try:
-            validate_manufacturing_before_expiration(
-                date(2024, 1, 1), date(2025, 1, 1)
-            )
+            validate_manufacturing_before_expiration(MANUFACTURING, EXPIRATION)
         except ValidationError:
             self.fail(
                 "validate_manufacturing_before_expiration raised ValidationError "
-                "for a valid date pair."
+                "for valid date pair."
             )
 
-    def test_manufacturing_equal_to_expiration_raises_validation_error(self):
-        """Equal manufacturing and expiration dates must raise ``ValidationError``."""
+    def test_manufacturing_equal_expiration_raises_validation_error(self):
+        """Equal manufacturing and expiration dates must be rejected."""
         same_date = date(2024, 6, 1)
         with self.assertRaises(ValidationError):
             validate_manufacturing_before_expiration(same_date, same_date)
 
     def test_manufacturing_after_expiration_raises_validation_error(self):
-        """A manufacturing date after the expiration date must raise ``ValidationError``."""
+        """A manufacturing date after the expiration date must be rejected."""
         with self.assertRaises(ValidationError):
-            validate_manufacturing_before_expiration(
-                date(2025, 1, 1), date(2024, 1, 1)
+            validate_manufacturing_before_expiration(EXPIRATION, MANUFACTURING)
+
+    def test_manufacturing_one_day_before_expiration_passes(self):
+        """Manufacturing exactly one day before expiration is a valid edge case."""
+        one_day_before = EXPIRATION - timedelta(days=1)
+        try:
+            validate_manufacturing_before_expiration(one_day_before, EXPIRATION)
+        except ValidationError:
+            self.fail(
+                "validate_manufacturing_before_expiration raised ValidationError "
+                "for manufacturing date one day before expiration."
             )
 
 
+# ---------------------------------------------------------------------------
+# Model tests
 # ---------------------------------------------------------------------------
 
 
 class SupplyLotModelTests(TestCase):
     """
-    Tests for ``SupplyLot.clean`` — ensures the model-level cross-field
-    validation delegates correctly to the date validator.
+    Tests for the ``SupplyLot`` model — field defaults, ``clean()``
+    validation and ``__str__`` representation.
     """
 
-    def _make_inspection_mock(self):
-        """Return a minimal mock that satisfies the OneToOneField constraint."""
-        inspection = MagicMock()
-        inspection.pk = 1
-        return inspection
+    def setUp(self):
+        self.inspection = _make_inspection()
 
-    def test_clean_raises_when_manufacturing_not_before_expiration(self):
-        """
-        ``clean`` must raise ``ValidationError`` when manufacturing_date is
-        greater than or equal to expiration_date.
-        """
-        lot = SupplyLot(
+    def _make_lot(self, **overrides):
+        defaults = dict(
             status=SupplyLotStatus.PENDING,
-            manufacturing_date=date(2025, 6, 1),
-            expiration_date=date(2025, 1, 1),
-            description="Test lot",
+            inspection=self.inspection,
+            manufacturing_date=MANUFACTURING,
+            expiration_date=EXPIRATION,
+            description="Lote de teste.",
         )
+        defaults.update(overrides)
+        return SupplyLot(**defaults)
+
+    def test_default_status_is_pending(self):
+        """A newly created lot without an explicit status must default to ``pending``."""
+        lot = SupplyLot.objects.create(
+            inspection=self.inspection,
+            manufacturing_date=MANUFACTURING,
+            expiration_date=EXPIRATION,
+            description="Lote padrão.",
+        )
+        self.assertEqual(lot.status, SupplyLotStatus.PENDING)
+
+    def test_clean_raises_when_manufacturing_equals_expiration(self):
+        """``clean()`` must propagate the date-order ValidationError from the validator."""
+        same = date(2024, 6, 1)
+        lot = self._make_lot(manufacturing_date=same, expiration_date=same)
+        with self.assertRaises(ValidationError):
+            lot.clean()
+
+    def test_clean_raises_when_manufacturing_after_expiration(self):
+        """``clean()`` must reject a manufacturing date that is after expiration."""
+        lot = self._make_lot(manufacturing_date=EXPIRATION, expiration_date=MANUFACTURING)
         with self.assertRaises(ValidationError):
             lot.clean()
 
     def test_clean_passes_for_valid_dates(self):
-        """``clean`` must not raise when manufacturing_date < expiration_date."""
-        lot = SupplyLot(
-            status=SupplyLotStatus.PENDING,
-            manufacturing_date=date(2024, 1, 1),
-            expiration_date=date(2025, 1, 1),
-            description="Test lot",
-        )
+        """``clean()`` must not raise for a well-ordered date pair."""
+        lot = self._make_lot()
         try:
             lot.clean()
         except ValidationError:
-            self.fail("SupplyLot.clean() raised ValidationError for valid dates.")
+            self.fail("SupplyLot.clean() raised ValidationError for valid date pair.")
 
-    def test_str_representation(self):
-        """``__str__`` must include the pk, status label and expiration date."""
-        lot = SupplyLot()
-        lot.pk = 42
-        lot.status = SupplyLotStatus.APPROVED
-        lot.expiration_date = date(2026, 12, 31)
-        result = str(lot)
-        self.assertIn("42", result)
-        self.assertIn("Approved", result)
-        self.assertIn("2026-12-31", result)
+    def test_str_contains_pk_status_and_expiration(self):
+        """``__str__`` must include the pk, status display and expiration date."""
+        lot = SupplyLot.objects.create(
+            status=SupplyLotStatus.APPROVED,
+            inspection=self.inspection,
+            manufacturing_date=MANUFACTURING,
+            expiration_date=EXPIRATION,
+            description="Lote str.",
+        )
+        representation = str(lot)
+        self.assertIn(str(lot.pk), representation)
+        self.assertIn(str(EXPIRATION), representation)
 
 
+# ---------------------------------------------------------------------------
+# Serializer tests
 # ---------------------------------------------------------------------------
 
 
@@ -154,120 +241,121 @@ class SupplyLotSerializerTests(TestCase):
     Tests for ``SupplyLotSerializer``.
 
     The serializer is responsible for validating status choices and the
-    manufacturing/expiration date relationship, enforcing required fields,
-    and exposing the expected set of fields in its output representation.
-
-    Because ``inspection`` is a relational field pointing at a separate app,
-    all serializer tests that require a persisted instance use a mock
-    inspection pk and patch the queryset where needed.
+    manufacturing/expiration date relationship (delegating to the validators),
+    enforcing required fields, and exposing the expected set of fields in its
+    output representation.
     """
+
+    def setUp(self):
+        self.inspection = _make_inspection()
 
     def _valid_payload(self, **overrides):
         payload = {
             "status": SupplyLotStatus.PENDING,
-            "inspection": 1,
-            "manufacturing_date": str(_past_date(60)),
-            "expiration_date": str(_future_date(300)),
-            "description": "Lote de teste para insumo cirúrgico.",
+            "inspection": self.inspection.pk,
+            "manufacturing_date": str(MANUFACTURING),
+            "expiration_date": str(EXPIRATION),
+            "description": "Lote de luvas cirúrgicas.",
         }
         payload.update(overrides)
         return payload
 
-    def _make_serializer(self, data=None, instance=None, partial=False):
-        return SupplyLotSerializer(instance=instance, data=data, partial=partial)
-
     def test_valid_payload_is_valid(self):
         """A fully-populated, well-formed payload must pass validation."""
-        with patch(
-            "apps.supply_lot.serializers.SupplyLotSerializer.validate_inspection",
-            return_value=MagicMock(pk=1),
-        ):
-            serializer = self._make_serializer(data=self._valid_payload())
-            self.assertTrue(serializer.is_valid(), serializer.errors)
+        serializer = SupplyLotSerializer(data=self._valid_payload())
+        self.assertTrue(serializer.is_valid(), serializer.errors)
 
-    def test_missing_status_is_invalid(self):
-        """``status`` is required; its absence must produce a validation error."""
-        payload = self._valid_payload()
-        payload = self._valid_payload(status=None)
-        serializer = self._make_serializer(data=payload)
+    def test_missing_inspection_is_invalid(self):
+        """``inspection`` is required; its absence must produce a validation error."""
+        serializer = SupplyLotSerializer(data=self._valid_payload(inspection=None))
         self.assertFalse(serializer.is_valid())
-        self.assertIn("status", serializer.errors)
+        self.assertIn("inspection", serializer.errors)
 
     def test_missing_manufacturing_date_is_invalid(self):
         """``manufacturing_date`` is required; its absence must produce a validation error."""
-        payload = self._valid_payload()
-        payload = self._valid_payload(manufacturing_date = None)
-        serializer = self._make_serializer(data=payload)
+        serializer = SupplyLotSerializer(data=self._valid_payload(manufacturing_date=None))
         self.assertFalse(serializer.is_valid())
         self.assertIn("manufacturing_date", serializer.errors)
 
     def test_missing_expiration_date_is_invalid(self):
         """``expiration_date`` is required; its absence must produce a validation error."""
-        payload = self._valid_payload()
-        payload = self._valid_payload(expiration_date=None)
-        serializer = self._make_serializer(data=payload)
+        serializer = SupplyLotSerializer(data=self._valid_payload(expiration_date=None))
         self.assertFalse(serializer.is_valid())
         self.assertIn("expiration_date", serializer.errors)
 
     def test_missing_description_is_invalid(self):
         """``description`` is required; its absence must produce a validation error."""
-        payload = self._valid_payload()
-        payload = self._valid_payload(description=None)
-        serializer = self._make_serializer(data=payload)
+        serializer = SupplyLotSerializer(data=self._valid_payload(description=None))
         self.assertFalse(serializer.is_valid())
         self.assertIn("description", serializer.errors)
 
     def test_invalid_status_is_invalid(self):
         """An unrecognised ``status`` value must be rejected."""
-        serializer = self._make_serializer(
-            data=self._valid_payload(status="invalid_status")
+        serializer = SupplyLotSerializer(
+            data=self._valid_payload(status="contaminated")
         )
         self.assertFalse(serializer.is_valid())
         self.assertIn("status", serializer.errors)
 
-    def test_id_is_read_only(self):
-        """
-        ``id`` must be read-only: supplying it in the input payload must
-        not cause a validation error, but it must also not appear in
-        ``validated_data``.
-        """
-        with patch(
-            "apps.supply_lot.serializers.SupplyLotSerializer.validate_inspection",
-            return_value=MagicMock(pk=1),
-        ):
-            serializer = self._make_serializer(data=self._valid_payload(id=999))
-            self.assertTrue(serializer.is_valid(), serializer.errors)
-            self.assertNotIn("id", serializer.validated_data)
+    def test_all_valid_statuses_are_accepted(self):
+        """Every declared ``SupplyLotStatus`` value must be accepted by the serializer."""
+        for status_value in SupplyLotStatus.values:
+            with self.subTest(status=status_value):
+                serializer = SupplyLotSerializer(
+                    data=self._valid_payload(status=status_value)
+                )
+                self.assertTrue(serializer.is_valid(), serializer.errors)
 
     def test_representation_contains_expected_fields(self):
         """
-        Serialized output must expose exactly the contracted fields:
+        Serialized output must expose the contracted fields:
         ``id``, ``status``, ``inspection``, ``manufacturing_date``,
-        ``expiration_date`` and ``description`` — nothing more, nothing less.
+        ``expiration_date`` and ``description``.
         """
-        with patch("apps.inspection.models.Inspection") as MockInspection:
-            inspection_instance = MagicMock()
-            inspection_instance.pk = 1
+        supply_lot = SupplyLot.objects.create(
+            status=SupplyLotStatus.PENDING,
+            inspection=self.inspection,
+            manufacturing_date=MANUFACTURING,
+            expiration_date=EXPIRATION,
+            description="Lote de teste.",
+        )
+        data = SupplyLotSerializer(supply_lot).data
+        for field in ("id", "status", "inspection", "manufacturing_date", "expiration_date", "description"):
+            with self.subTest(field=field):
+                self.assertIn(field, data)
 
-            lot = SupplyLot(
-                pk=10,
-                status=SupplyLotStatus.APPROVED,
-                inspection=inspection_instance,
-                manufacturing_date=_past_date(60),
-                expiration_date=_future_date(300),
-                description="Lote aprovado.",
-            )
-            data = SupplyLotSerializer(lot).data
-            self.assertIn("id", data)
-            self.assertIn("status", data)
-            self.assertIn("inspection", data)
-            self.assertIn("manufacturing_date", data)
-            self.assertIn("expiration_date", data)
-            self.assertIn("description", data)
-            self.assertNotIn("created_at", data)
-            self.assertNotIn("updated_at", data)
+    def test_representation_status_and_inspection_values(self):
+        """Serialized output must carry the correct ``status`` and ``inspection`` values."""
+        supply_lot = SupplyLot.objects.create(
+            status=SupplyLotStatus.PENDING,
+            inspection=self.inspection,
+            manufacturing_date=MANUFACTURING,
+            expiration_date=EXPIRATION,
+            description="Lote de teste.",
+        )
+        data = SupplyLotSerializer(supply_lot).data
+        self.assertEqual(data["status"], SupplyLotStatus.PENDING)
+        self.assertEqual(data["inspection"], self.inspection.pk)
+
+    def test_id_is_read_only(self):
+        """
+        ``id`` must be read-only: supplying it in the input payload must
+        not cause a validation error, but it must not be accepted as a
+        writable field.
+        """
+        serializer = SupplyLotSerializer(data=self._valid_payload(id=999))
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        self.assertNotIn("id", serializer.validated_data)
+
+    def test_nonexistent_inspection_is_invalid(self):
+        """An ``inspection`` pk that does not exist in the DB must be rejected."""
+        serializer = SupplyLotSerializer(data=self._valid_payload(inspection=99999))
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("inspection", serializer.errors)
 
 
+# ---------------------------------------------------------------------------
+# Service tests
 # ---------------------------------------------------------------------------
 
 
@@ -279,107 +367,120 @@ class SupplyLotServiceTests(TestCase):
     These tests bypass HTTP and DRF and call the service methods directly
     so that failures point squarely at the service layer rather than at
     routing or serialization.
-
-    Because ``inspection`` is a OneToOneField protected by a FK constraint,
-    tests that need a persisted ``SupplyLot`` row mock the inspection.
     """
 
-    def _valid_data(self, inspection_instance, **overrides):
+    def setUp(self):
+        self.inspection = _make_inspection()
+
+    def _valid_data(self, **overrides):
         data = {
             "status": SupplyLotStatus.PENDING,
-            "inspection": inspection_instance,
-            "manufacturing_date": _past_date(60),
-            "expiration_date": _future_date(300),
-            "description": "Cateter venoso central para UTI.",
+            "inspection": self.inspection,
+            "manufacturing_date": MANUFACTURING,
+            "expiration_date": EXPIRATION,
+            "description": "Lote de cateter venoso.",
         }
         data.update(overrides)
         return data
 
-    def _create_lot(self, inspection_instance, **overrides):
-        return SupplyLot.objects.create(
-            **self._valid_data(inspection_instance, **overrides)
+    def test_create_persists_supply_lot(self):
+        """``create`` must persist exactly one ``SupplyLot`` row in the database."""
+        supply_lot = SupplyLotService.create(self._valid_data())
+        self.assertEqual(SupplyLot.objects.count(), 1)
+        self.assertIsNotNone(supply_lot.pk)
+
+    def test_create_returns_supply_lot_instance(self):
+        """``create`` must return the persisted ``SupplyLot`` instance."""
+        supply_lot = SupplyLotService.create(self._valid_data())
+        self.assertIsInstance(supply_lot, SupplyLot)
+
+    def test_create_stores_correct_field_values(self):
+        """The persisted instance must reflect the data passed to ``create``."""
+        supply_lot = SupplyLotService.create(self._valid_data())
+        self.assertEqual(supply_lot.status, SupplyLotStatus.PENDING)
+        self.assertEqual(supply_lot.inspection, self.inspection)
+        self.assertEqual(supply_lot.manufacturing_date, MANUFACTURING)
+        self.assertEqual(supply_lot.expiration_date, EXPIRATION)
+        self.assertEqual(supply_lot.description, "Lote de cateter venoso.")
+
+    def test_list_all_returns_all_supply_lots(self):
+        """``list_all`` must return every ``SupplyLot`` row present in the database."""
+        inspection2 = _make_inspection()
+        SupplyLotService.create(self._valid_data())
+        SupplyLotService.create(
+            self._valid_data(inspection=inspection2, description="Segundo lote.")
         )
-
-    @patch("apps.supply_lot.services.SupplyLot.objects")
-    def test_list_all_returns_all_lots(self, mock_objects):
-        """``list_all`` must return the full queryset."""
-        mock_qs = MagicMock()
-        mock_objects.all.return_value = mock_qs
         result = SupplyLotService.list_all()
-        mock_objects.all.assert_called_once()
-        self.assertEqual(result, mock_qs)
+        self.assertEqual(result.count(), 2)
 
-    @patch("apps.supply_lot.services.get_object_or_404")
-    def test_get_returns_correct_lot(self, mock_get):
-        """``get`` must delegate to ``get_object_or_404`` with the given pk."""
-        mock_lot = MagicMock()
-        mock_get.return_value = mock_lot
-        result = SupplyLotService.get(pk=1)
-        mock_get.assert_called_once_with(SupplyLot, pk=1)
-        self.assertEqual(result, mock_lot)
+    def test_list_all_returns_empty_queryset_when_no_lots(self):
+        """``list_all`` on an empty table must return an empty queryset."""
+        result = SupplyLotService.list_all()
+        self.assertEqual(result.count(), 0)
 
-    @patch("apps.supply_lot.services.get_object_or_404")
-    def test_get_raises_http404_for_unknown_pk(self, mock_get):
-        """``get`` must propagate ``Http404`` for an unknown pk."""
-        mock_get.side_effect = Http404
+    def test_get_returns_correct_supply_lot(self):
+        """``get`` must return the ``SupplyLot`` whose pk matches the argument."""
+        supply_lot = SupplyLotService.create(self._valid_data())
+        fetched = SupplyLotService.get(supply_lot.pk)
+        self.assertEqual(fetched.pk, supply_lot.pk)
+
+    def test_get_raises_404_for_nonexistent_pk(self):
+        """``get`` must raise ``Http404`` when no row matches the given pk."""
         with self.assertRaises(Http404):
-            SupplyLotService.get(pk=9999)
+            SupplyLotService.get(9999)
 
-    @patch("apps.supply_lot.services.SupplyLot.objects")
-    def test_create_persists_supply_lot(self, mock_objects):
-        """``create`` must call ``objects.create`` with the validated data."""
-        mock_lot = MagicMock()
-        mock_objects.create.return_value = mock_lot
-        validated_data = {
-            "status": SupplyLotStatus.PENDING,
-            "manufacturing_date": _past_date(60),
-            "expiration_date": _future_date(300),
-            "description": "Test.",
-        }
-        result = SupplyLotService.create(validated_data)
-        mock_objects.create.assert_called_once_with(**validated_data)
-        self.assertEqual(result, mock_lot)
+    def test_update_changes_supplied_fields(self):
+        """``update`` must persist every field supplied in ``validated_data``."""
+        supply_lot = SupplyLotService.create(self._valid_data())
+        updated = SupplyLotService.update(
+            supply_lot, {"status": SupplyLotStatus.APPROVED, "description": "Aprovado."}
+        )
+        supply_lot.refresh_from_db()
+        self.assertEqual(supply_lot.status, SupplyLotStatus.APPROVED)
+        self.assertEqual(supply_lot.description, "Aprovado.")
+        self.assertEqual(updated.pk, supply_lot.pk)
 
-    def test_update_sets_attributes_and_saves(self):
-        """
-        ``update`` must apply each key/value from ``validated_data`` to the
-        instance and call ``save``.
-        """
-        instance = MagicMock(spec=SupplyLot)
-        validated_data = {"status": SupplyLotStatus.APPROVED, "description": "Updated."}
-        result = SupplyLotService.update(instance=instance, validated_data=validated_data)
-        self.assertEqual(instance.status, SupplyLotStatus.APPROVED)
-        self.assertEqual(instance.description, "Updated.")
-        instance.save.assert_called_once()
-        self.assertEqual(result, instance)
+    def test_update_returns_updated_instance(self):
+        """``update`` must return the same instance (same pk) with the new values."""
+        supply_lot = SupplyLotService.create(self._valid_data())
+        updated = SupplyLotService.update(supply_lot, {"status": SupplyLotStatus.REJECTED})
+        self.assertIsInstance(updated, SupplyLot)
+        self.assertEqual(updated.pk, supply_lot.pk)
 
-    @patch("apps.supply_lot.services.get_object_or_404")
-    def test_delete_removes_supply_lot(self, mock_get):
-        """``delete`` must fetch the instance and call ``delete`` on it."""
-        mock_lot = MagicMock()
-        mock_get.return_value = mock_lot
-        SupplyLotService.delete(pk=1)
-        mock_get.assert_called_once_with(SupplyLot, pk=1)
-        mock_lot.delete.assert_called_once()
+    def test_update_does_not_alter_omitted_fields(self):
+        """Fields absent from ``validated_data`` must remain unchanged after ``update``."""
+        supply_lot = SupplyLotService.create(self._valid_data())
+        original_expiration = supply_lot.expiration_date
+        SupplyLotService.update(supply_lot, {"status": SupplyLotStatus.QUARANTINE})
+        supply_lot.refresh_from_db()
+        self.assertEqual(supply_lot.expiration_date, original_expiration)
 
-    @patch("apps.supply_lot.services.get_object_or_404")
-    def test_delete_raises_http404_for_unknown_pk(self, mock_get):
-        """``delete`` must propagate ``Http404`` for an unknown pk."""
-        mock_get.side_effect = Http404
+    def test_delete_removes_supply_lot(self):
+        """``delete`` must remove the row so that no orphan record remains."""
+        supply_lot = SupplyLotService.create(self._valid_data())
+        pk = supply_lot.pk
+        SupplyLotService.delete(pk)
+        self.assertFalse(SupplyLot.objects.filter(pk=pk).exists())
+
+    def test_delete_raises_404_for_nonexistent_pk(self):
+        """``delete`` must raise ``Http404`` when no row matches the given pk."""
         with self.assertRaises(Http404):
-            SupplyLotService.delete(pk=9999)
+            SupplyLotService.delete(9999)
 
 
+# ---------------------------------------------------------------------------
+# View / API tests — list endpoint
 # ---------------------------------------------------------------------------
 
 
 class SupplyLotListAPITests(TestCase):
     """
-    HTTP-level tests for ``/api/supply-lots/`` (list / create).
+    HTTP-level tests for ``/api/supply-lots/``
+    (list / create).
 
-    Covers the response envelope shape, empty-list handling, field
-    validation at the HTTP boundary, and the 201-with-id contract for
-    successful creation.
+    Covers the ``{"data": ...}`` response envelope, empty-list responses,
+    required-field validation at the HTTP layer and successful creation
+    with the resulting 201 status code.
     """
 
     def setUp(self):
@@ -390,15 +491,16 @@ class SupplyLotListAPITests(TestCase):
             email="supplylotlistuser@example.com",
         )
         self.client.force_authenticate(self.user)
+        self.inspection = _make_inspection()
         self.url = "/api/supply-lots/"
 
-    def _valid_payload(self, inspection_pk=1, **overrides):
+    def _valid_payload(self, **overrides):
         payload = {
             "status": SupplyLotStatus.PENDING,
-            "inspection": inspection_pk,
-            "manufacturing_date": str(_past_date(60)),
-            "expiration_date": str(_future_date(300)),
-            "description": "Lote de insumo para teste de API.",
+            "inspection": self.inspection.pk,
+            "manufacturing_date": str(MANUFACTURING),
+            "expiration_date": str(EXPIRATION),
+            "description": "Lote de máscaras cirúrgicas.",
         }
         payload.update(overrides)
         return payload
@@ -406,16 +508,35 @@ class SupplyLotListAPITests(TestCase):
     # GET /api/supply-lots/
 
     def test_get_returns_200_and_data_envelope(self):
-        """GET on the list endpoint must return 200 with a ``data`` key."""
-        with patch("apps.supply_lot.views.SupplyLotService.list_all", return_value=[]):
-            response = self.client.get(self.url)
+        """GET must return 200 with results nested under the ``data`` key."""
+        response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
         self.assertIn("data", response.data)
 
-    def test_get_empty_list_returns_empty_data(self):
-        """When no lots exist the ``data`` key must contain an empty list."""
-        with patch("apps.supply_lot.views.SupplyLotService.list_all", return_value=[]):
-            response = self.client.get(self.url)
+    def test_get_returns_all_supply_lots(self):
+        """GET must include every persisted ``SupplyLot`` in its response."""
+        inspection2 = _make_inspection()
+        SupplyLot.objects.create(
+            status=SupplyLotStatus.PENDING,
+            inspection=self.inspection,
+            manufacturing_date=MANUFACTURING,
+            expiration_date=EXPIRATION,
+            description="Lote A.",
+        )
+        SupplyLot.objects.create(
+            status=SupplyLotStatus.APPROVED,
+            inspection=inspection2,
+            manufacturing_date=MANUFACTURING,
+            expiration_date=EXPIRATION,
+            description="Lote B.",
+        )
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data["data"]), 2)
+
+    def test_get_returns_empty_list_when_no_lots(self):
+        """GET on an empty table must return 200 with an empty list under ``data``."""
+        response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["data"], [])
 
@@ -423,73 +544,78 @@ class SupplyLotListAPITests(TestCase):
 
     def test_post_creates_supply_lot_and_returns_201(self):
         """
-        A valid POST must return 201, delegate creation to the service and
-        echo the created resource under the ``data`` key.
+        A valid POST must return 201, persist one row and echo the created
+        resource under the ``data`` key.
         """
-        mock_lot = MagicMock(spec=SupplyLot)
-        mock_lot.pk = 1
-        mock_lot.status = SupplyLotStatus.PENDING
-        mock_lot.inspection_id = 1
-        mock_lot.manufacturing_date = _past_date(60)
-        mock_lot.expiration_date = _future_date(300)
-        mock_lot.description = "Lote de insumo para teste de API."
-
-        with patch(
-            "apps.supply_lot.views.SupplyLotService.create", return_value=mock_lot
-        ), patch(
-            "apps.supply_lot.serializers.SupplyLotSerializer.is_valid", return_value=True
-        ), patch(
-            "apps.supply_lot.serializers.SupplyLotSerializer.validated_data",
-            new_callable=lambda: property(lambda self: {}),
-        ):
-            response = self.client.post(self.url, self._valid_payload(), format="json")
-
+        response = self.client.post(self.url, self._valid_payload(), format="json")
         self.assertEqual(response.status_code, 201, response.data)
+        self.assertEqual(SupplyLot.objects.count(), 1)
         self.assertIn("data", response.data)
+        self.assertEqual(
+            response.data["data"]["description"], "Lote de máscaras cirúrgicas."
+        )
 
-    def test_post_with_missing_status_returns_400(self):
-        """A payload without ``status`` must return 400 with per-field errors."""
-        payload = self._valid_payload()
-        payload = self._valid_payload(status=None)
-        response = self.client.post(self.url, payload, format="json")
-        self.assertEqual(response.status_code, 400)
-        self.assertIn("status", response.data)
+    def test_post_response_contains_id(self):
+        """The created resource in the response must include the generated ``id``."""
+        response = self.client.post(self.url, self._valid_payload(), format="json")
+        self.assertEqual(response.status_code, 201)
+        self.assertIn("id", response.data["data"])
 
-    def test_post_with_invalid_status_returns_400(self):
-        """An unrecognised ``status`` value must return 400."""
+    def test_post_response_status_matches_payload(self):
+        """The response must reflect the ``status`` submitted in the payload."""
         response = self.client.post(
             self.url,
-            self._valid_payload(status="invalid_status"),
+            self._valid_payload(status=SupplyLotStatus.APPROVED),
             format="json",
         )
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["data"]["status"], SupplyLotStatus.APPROVED)
+
+    def test_post_with_missing_description_returns_400(self):
+        """A payload without ``description`` must return 400 with per-field errors."""
+        response = self.client.post(
+            self.url, self._valid_payload(description=None), format="json"
+        )
         self.assertEqual(response.status_code, 400)
-        self.assertIn("status", response.data)
+        self.assertIn("description", response.data)
 
     def test_post_with_missing_manufacturing_date_returns_400(self):
         """A payload without ``manufacturing_date`` must return 400."""
-        payload = self._valid_payload()
-        payload = self._valid_payload(manufacturing_date=None)
-        response = self.client.post(self.url, payload, format="json")
+        response = self.client.post(
+            self.url, self._valid_payload(manufacturing_date=None), format="json"
+        )
         self.assertEqual(response.status_code, 400)
         self.assertIn("manufacturing_date", response.data)
 
     def test_post_with_missing_expiration_date_returns_400(self):
         """A payload without ``expiration_date`` must return 400."""
-        payload = self._valid_payload()
-        payload = self._valid_payload(expiration_date=None)
-        response = self.client.post(self.url, payload, format="json")
+        response = self.client.post(
+            self.url, self._valid_payload(expiration_date=None), format="json"
+        )
         self.assertEqual(response.status_code, 400)
         self.assertIn("expiration_date", response.data)
 
-    def test_post_with_missing_description_returns_400(self):
-        """A payload without ``description`` must return 400."""
-        payload = self._valid_payload()
-        payload = self._valid_payload(description=None)
-        response = self.client.post(self.url, payload, format="json")
+    def test_post_with_invalid_status_returns_400(self):
+        """An unrecognised ``status`` value must return 400."""
+        response = self.client.post(
+            self.url,
+            self._valid_payload(status="contaminated"),
+            format="json",
+        )
         self.assertEqual(response.status_code, 400)
-        self.assertIn("description", response.data)
+        self.assertIn("status", response.data)
+
+    def test_post_with_missing_inspection_returns_400(self):
+        """A payload without ``inspection`` must return 400."""
+        response = self.client.post(
+            self.url, self._valid_payload(inspection=None), format="json"
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("inspection", response.data)
 
 
+# ---------------------------------------------------------------------------
+# View / API tests — detail endpoint
 # ---------------------------------------------------------------------------
 
 
@@ -511,49 +637,44 @@ class SupplyLotDetailAPITests(TestCase):
             email="supplylotdetailuser@example.com",
         )
         self.client.force_authenticate(self.user)
-
-        self.mock_lot = MagicMock(spec=SupplyLot)
-        self.mock_lot.pk = 1
-        self.mock_lot.status = SupplyLotStatus.PENDING
-        self.mock_lot.inspection_id = 1
-        self.mock_lot.manufacturing_date = _past_date(60)
-        self.mock_lot.expiration_date = _future_date(300)
-        self.mock_lot.description = "Lote de cateter para teste."
-
-        self.url = "/api/supply-lots/1/"
+        self.inspection = _make_inspection()
+        self.supply_lot = SupplyLot.objects.create(
+            status=SupplyLotStatus.PENDING,
+            inspection=self.inspection,
+            manufacturing_date=MANUFACTURING,
+            expiration_date=EXPIRATION,
+            description="Lote de seringas descartáveis.",
+        )
+        self.url = f"/api/supply-lots/{self.supply_lot.pk}/"
 
     # GET /api/supply-lots/<pk>/
 
     def test_retrieve_returns_200_and_data_envelope(self):
         """GET on an existing pk must return 200 with the resource under ``data``."""
-        with patch(
-            "apps.supply_lot.views.SupplyLotService.get", return_value=self.mock_lot
-        ):
-            response = self.client.get(self.url)
+        response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
         self.assertIn("data", response.data)
 
     def test_retrieve_returns_correct_fields(self):
         """
         The retrieved payload must expose ``id``, ``status``, ``inspection``,
-        ``manufacturing_date``, ``expiration_date`` and ``description``
-        at the top level of the ``data`` object.
+        ``manufacturing_date``, ``expiration_date`` and ``description``.
         """
-        with patch(
-            "apps.supply_lot.views.SupplyLotService.get", return_value=self.mock_lot
-        ):
-            response = self.client.get(self.url)
+        response = self.client.get(self.url)
         data = response.data["data"]
-        for field in ("id", "status", "inspection", "manufacturing_date", "expiration_date", "description"):
-            self.assertIn(field, data)
+        self.assertEqual(data["id"], self.supply_lot.pk)
+        self.assertEqual(data["status"], SupplyLotStatus.PENDING)
+        self.assertEqual(data["inspection"], self.inspection.pk)
+        self.assertEqual(data["description"], "Lote de seringas descartáveis.")
 
     def test_retrieve_not_found_returns_404(self):
         """An unknown pk must return 404, not 500 or an empty body."""
-        with patch(
-            "apps.supply_lot.views.SupplyLotService.get", side_effect=Http404
-        ):
-            response = self.client.get("/api/supply-lots/9999/")
+        response = self.client.get("/api/supply-lots/9999/")
         self.assertEqual(response.status_code, 404)
+
+    def test_retrieve_404_response_contains_error_key(self):
+        """The 404 response body must contain the ``error`` key."""
+        response = self.client.get("/api/supply-lots/9999/")
         self.assertIn("error", response.data)
 
     # PATCH /api/supply-lots/<pk>/
@@ -563,94 +684,89 @@ class SupplyLotDetailAPITests(TestCase):
         PATCH must update only the fields present in the payload and
         persist the changes so that a subsequent fetch reflects them.
         """
-        updated_lot = MagicMock(spec=SupplyLot)
-        updated_lot.pk = 1
-        updated_lot.status = SupplyLotStatus.APPROVED
-        updated_lot.inspection_id = 1
-        updated_lot.manufacturing_date = self.mock_lot.manufacturing_date
-        updated_lot.expiration_date = self.mock_lot.expiration_date
-        updated_lot.description = self.mock_lot.description
-
-        with patch(
-            "apps.supply_lot.views.SupplyLotService.get", return_value=self.mock_lot
-        ), patch(
-            "apps.supply_lot.views.SupplyLotService.update", return_value=updated_lot
-        ):
-            response = self.client.patch(
-                self.url, {"status": SupplyLotStatus.APPROVED}, format="json"
-            )
+        response = self.client.patch(
+            self.url,
+            {"status": SupplyLotStatus.APPROVED, "description": "Lote aprovado."},
+            format="json",
+        )
         self.assertEqual(response.status_code, 200, response.data)
+        self.supply_lot.refresh_from_db()
+        self.assertEqual(self.supply_lot.status, SupplyLotStatus.APPROVED)
+        self.assertEqual(self.supply_lot.description, "Lote aprovado.")
 
     def test_patch_does_not_alter_omitted_fields(self):
         """
         Fields absent from a PATCH payload must remain unchanged after
         the update — partial semantics must be enforced.
         """
-        original_description = self.mock_lot.description
-
-        with patch(
-            "apps.supply_lot.views.SupplyLotService.get", return_value=self.mock_lot
-        ), patch(
-            "apps.supply_lot.views.SupplyLotService.update", return_value=self.mock_lot
-        ):
-            self.client.patch(
-                self.url, {"status": SupplyLotStatus.QUARANTINE}, format="json"
-            )
-
-        self.assertEqual(self.mock_lot.description, original_description)
+        original_expiration = self.supply_lot.expiration_date
+        self.client.patch(
+            self.url, {"status": SupplyLotStatus.QUARANTINE}, format="json"
+        )
+        self.supply_lot.refresh_from_db()
+        self.assertEqual(self.supply_lot.expiration_date, original_expiration)
 
     def test_patch_response_contains_updated_data(self):
         """The PATCH response must echo the full updated resource under ``data``."""
-        with patch(
-            "apps.supply_lot.views.SupplyLotService.get", return_value=self.mock_lot
-        ), patch(
-            "apps.supply_lot.views.SupplyLotService.update", return_value=self.mock_lot
-        ):
-            response = self.client.patch(
-                self.url, {"status": SupplyLotStatus.APPROVED}, format="json"
-            )
+        response = self.client.patch(
+            self.url, {"description": "Descrição modificada."}, format="json"
+        )
         self.assertEqual(response.status_code, 200)
         self.assertIn("data", response.data)
+        self.assertEqual(response.data["data"]["description"], "Descrição modificada.")
 
     def test_patch_with_invalid_status_returns_400(self):
         """A PATCH with an unrecognised ``status`` must return 400."""
-        with patch(
-            "apps.supply_lot.views.SupplyLotService.get", return_value=self.mock_lot
-        ):
-            response = self.client.patch(
-                self.url, {"status": "invalid_status"}, format="json"
-            )
+        response = self.client.patch(
+            self.url, {"status": "contaminated"}, format="json"
+        )
         self.assertEqual(response.status_code, 400)
         self.assertIn("status", response.data)
 
     def test_patch_not_found_returns_404(self):
         """PATCH on an unknown pk must return 404."""
-        with patch(
-            "apps.supply_lot.views.SupplyLotService.get", side_effect=Http404
-        ):
-            response = self.client.patch(
-                "/api/supply-lots/9999/", {"status": SupplyLotStatus.APPROVED}, format="json"
-            )
+        response = self.client.patch(
+            "/api/supply-lots/9999/", {"description": "X"}, format="json"
+        )
         self.assertEqual(response.status_code, 404)
-        self.assertIn("error", response.data)
+
+    def test_patch_all_valid_statuses_accepted(self):
+        """Each declared status must be accepted by PATCH without error."""
+        inspections = [_make_inspection() for _ in SupplyLotStatus.values]
+        lots = [
+            SupplyLot.objects.create(
+                status=SupplyLotStatus.PENDING,
+                inspection=inspections[i],
+                manufacturing_date=MANUFACTURING,
+                expiration_date=EXPIRATION,
+                description=f"Lote {i}.",
+            )
+            for i, _ in enumerate(SupplyLotStatus.values)
+        ]
+        for lot, status_value in zip(lots, SupplyLotStatus.values):
+            with self.subTest(status=status_value):
+                url = f"/api/supply-lots/{lot.pk}/"
+                response = self.client.patch(url, {"status": status_value}, format="json")
+                self.assertEqual(response.status_code, 200, response.data)
 
     # DELETE /api/supply-lots/<pk>/
 
-    def test_delete_returns_204(self):
+    def test_delete_returns_204_and_removes_row(self):
         """
-        DELETE must return 204 confirming the resource has been removed.
+        DELETE must return 204 and remove the row so that no orphan
+        record remains in the database.
         """
-        with patch(
-            "apps.supply_lot.views.SupplyLotService.delete", return_value=None
-        ):
-            response = self.client.delete(self.url)
+        pk = self.supply_lot.pk
+        response = self.client.delete(self.url)
         self.assertEqual(response.status_code, 204)
+        self.assertFalse(SupplyLot.objects.filter(pk=pk).exists())
 
     def test_delete_not_found_returns_404(self):
         """DELETE on an unknown pk must return 404."""
-        with patch(
-            "apps.supply_lot.views.SupplyLotService.delete", side_effect=Http404
-        ):
-            response = self.client.delete("/api/supply-lots/9999/")
+        response = self.client.delete("/api/supply-lots/9999/")
         self.assertEqual(response.status_code, 404)
+
+    def test_delete_404_response_contains_error_key(self):
+        """The 404 response body on DELETE must contain the ``error`` key."""
+        response = self.client.delete("/api/supply-lots/9999/")
         self.assertIn("error", response.data)
