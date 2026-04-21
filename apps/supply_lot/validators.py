@@ -3,7 +3,7 @@ from django.utils.translation import gettext_lazy as _
 from apps.supply_lot.choices import SupplyLotStatus
 
 
-def validate_status(value):
+def validate_supply_status(value):
     if value not in SupplyLotStatus.values:
         raise ValidationError(_("Invalid supply lot status."))
 

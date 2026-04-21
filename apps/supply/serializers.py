@@ -21,7 +21,7 @@ class SupplySerializer(serializers.ModelSerializer):
         model = Supply
         fields = "__all__"
 
-    def validate_status(self, value):
+    def validate_supply_status(self, value):
         validate_supply_status(value)
         return value
 
