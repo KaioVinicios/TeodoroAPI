@@ -17,7 +17,7 @@ api_patterns = [
     path("supply-labels/", include("apps.supply_label.urls")),
     path("accounts/", include("apps.account.urls")),
     path("organizations/", include("apps.organization.urls")),
-    path("supply-lots/", include("apps.supply_lots.urls")),
+    path("supply-lots/", include("apps.supply_lot.urls")),
 
 ]
 

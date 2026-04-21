@@ -6,7 +6,6 @@ from apps.supply_lot.validators import (
 )
 
 class SupplyLotSerializer(serializers.ModelSerializer): 
-    id = serializers.IntegerField(read_only = True)
 
     def validate_manufacturing_before_expiration(self, value):
         validate_manufacturing_before_expiration(value)
@@ -18,16 +17,4 @@ class SupplyLotSerializer(serializers.ModelSerializer):
     
     class Meta: 
         model = SupplyLot
-        fields = [
-            "id",
-            "status",
-            "inspection",
-            "manufacturing_date",
-            "expiration_date",
-            "description"
-        ]
-
-    
-     
-
-
+        fields = "__all__"
