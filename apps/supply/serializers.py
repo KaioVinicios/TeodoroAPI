@@ -4,8 +4,7 @@ from apps.supply_label.serializers import SupplyLabelSerializer
 from apps.supply.models import Supply, SupplyLabel
 from apps.supply.validators import (
     validate_supply_status,
-    validate_supply_label_type,
-    validate_quantity,
+    validate_unit_of_measure,
 )
 
 class SupplySerializer(serializers.ModelSerializer):
@@ -26,6 +25,6 @@ class SupplySerializer(serializers.ModelSerializer):
         validate_supply_status(value)
         return value
 
-    def validate_quantity(self, value):
-        validate_quantity(value)
+    def validate_unit_of_measure(self, value):
+        validate_unit_of_measure(value)
         return value
