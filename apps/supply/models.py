@@ -3,7 +3,7 @@ from apps.core.models import TimeStampedModel
 from django.utils.translation import gettext_lazy as _
 from apps.supply_label.models import SupplyLabel
 from apps.supply.choices import SupplyStatus, UnitOfMeasure
-from apps.supply.validators import validate_supply_status, validate_unit_of_measure
+from apps.supply.validators import validate_status, validate_unit_of_measure
 
 class Supply(TimeStampedModel):
     supply_label = models.ForeignKey(
@@ -17,7 +17,7 @@ class Supply(TimeStampedModel):
         choices=SupplyStatus.choices,
         default=SupplyStatus.AVAILABLE,
         verbose_name=_("status"),
-        validators=[validate_supply_status],
+        validators=[validate_status],
     )
     description = models.TextField(
         verbose_name=_("description"),

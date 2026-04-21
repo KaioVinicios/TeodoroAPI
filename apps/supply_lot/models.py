@@ -4,7 +4,7 @@ from django.utils.translation import gettext_lazy as _
 from apps.supply_lot.choices import SupplyLotStatus
 from apps.supply_lot.validators import (
     validate_manufacturing_before_expiration,
-    validate_supply_status,
+    validate_status,
 )
 
 
@@ -14,7 +14,7 @@ class SupplyLot(TimeStampedModel):
         choices=SupplyLotStatus.choices,
         default=SupplyLotStatus.PENDING,
         verbose_name=_("status"),
-        validators=[validate_supply_status],
+        validators=[validate_status],
     )
     inspection = models.OneToOneField(
         "inspection.Inspection",
