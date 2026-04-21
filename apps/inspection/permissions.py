@@ -3,7 +3,7 @@ from rest_framework.permissions import BasePermission
 from apps.account.choices import AccountType
 
 
-class isAuditor(BasePermission):
+class IsAuditor(BasePermission):
     message = "Only auditors can access this resource."
 
     def has_permission(self, request, view):
@@ -15,4 +15,4 @@ class isAuditor(BasePermission):
         if account is None:
             return False
 
-        return account.account_type == "auditor"
+        return account.account_type == AccountType.AUDITOR

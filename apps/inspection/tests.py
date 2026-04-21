@@ -9,10 +9,10 @@ from rest_framework.test import APIClient
 from rest_framework.exceptions import ValidationError
 import datetime
 
-
 # ──────────────────────────────────────────────────────────────────────────────
 # Shared helpers
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 def _make_account(username, account_type, cpf):
     """Create a User + Account pair in one call."""
@@ -35,6 +35,7 @@ def _make_account(username, account_type, cpf):
 # Serializer
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 class InspectionSerializerTests(TestCase):
     """
     Tests for ``InspectionSerializer``.
@@ -51,9 +52,7 @@ class InspectionSerializerTests(TestCase):
 
     def test_valid_payload_is_valid(self):
         """A payload whose responsible is an auditor must pass validation."""
-        serializer = InspectionSerializer(
-            data={"responsible": self.auditor.pk}
-        )
+        serializer = InspectionSerializer(data={"responsible": self.auditor.pk})
         self.assertTrue(serializer.is_valid(), serializer.errors)
 
     def test_non_auditor_responsible_is_invalid(self):
@@ -61,9 +60,7 @@ class InspectionSerializerTests(TestCase):
         Assigning a non-auditor user as responsible must be rejected by
         ``validate_responsible_is_auditor``.
         """
-        serializer = InspectionSerializer(
-            data={"responsible": self.customer.pk}
-        )
+        serializer = InspectionSerializer(data={"responsible": self.customer.pk})
         self.assertFalse(serializer.is_valid())
         self.assertIn("responsible", serializer.errors)
 
@@ -94,6 +91,7 @@ class InspectionSerializerTests(TestCase):
 # ──────────────────────────────────────────────────────────────────────────────
 # Service layer
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 class InspectionServicesTests(TestCase):
     """
@@ -198,13 +196,15 @@ class InspectionServicesTests(TestCase):
 # List endpoint  GET / POST  /api/inspections/
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 class InspectionListAPITests(TestCase):
     """
     HTTP-level tests for ``GET /api/inspections/`` and
     ``POST /api/inspections/``.
 
-    Both verbs are restricted to authenticated auditors.  Customers and
-    anonymous users must be rejected before reaching any business logic.
+    Gets must be allowed for any authenticated user and return 200 with
+    the collection wrapped under the ``data`` key.  Posts must create a new
+    inspection and return 201 with the created resource under ``data``.
     """
 
     def setUp(self):
@@ -220,11 +220,11 @@ class InspectionListAPITests(TestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 401)
 
-    def test_list_forbidden_for_customer(self):
-        """Authenticated customers must receive 403."""
+    def test_list_for_non_auditor(self):
+        """Authenticated customers must receive 200."""
         self.client.force_authenticate(self.customer)
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 200)
 
     def test_list_allowed_for_auditor(self):
         """
@@ -302,22 +302,13 @@ class InspectionListAPITests(TestCase):
 # Detail endpoint  GET / PATCH / DELETE  /api/inspections/<pk>/
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 class InspectionDetailAPITests(TestCase):
     """
     HTTP-level tests for ``/api/inspections/<pk>/``.
 
     Covers authentication guards, 404 handling, partial updates (including the
     completed-inspection guard), and hard-delete behaviour.
-
-    .. note::
-        There is a bug in the current ``InspectionDetailAPIView.patch``
-        implementation: the local variable ``response`` is assigned to the
-        ``InspectionSerializer`` instance on the success path, shadowing the
-        imported ``Response`` class.  In the 404 branch this variable is not
-        yet defined, so ``return response(...)`` raises ``NameError``.  The
-        test ``test_patch_not_found`` therefore expects a 404 — it will fail
-        until the view is fixed (rename the serializer variable to something
-        like ``out_serializer``).
     """
 
     def setUp(self):
@@ -336,11 +327,11 @@ class InspectionDetailAPITests(TestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 401)
 
-    def test_retrieve_forbidden_for_customer(self):
-        """Customer GET must receive 403."""
+    def test_retrieve_for_non_auditor(self):
+        """Customer GET must receive 200."""
         self.client.force_authenticate(self.customer)
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 200)
 
     def test_retrieve_returns_inspection_for_auditor(self):
         """

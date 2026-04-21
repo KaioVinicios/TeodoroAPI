@@ -10,24 +10,9 @@ from rest_framework import serializers, status
 from rest_framework.views import APIView, Response
 from rest_framework.permissions import IsAuthenticated
 
-from apps.inspection.permissions import isAuditor
+from apps.inspection.permissions import IsAuditor
 from apps.inspection.serializers import InspectionSerializer
 from apps.inspection.services import InspectionServices
-
-InspectionEnvelopeSerializer = inline_serializer(
-    name="InspectionEnvelope",
-    fields={"data": InspectionSerializer()},
-)
-
-InspectionListEnvelopeSerializer = inline_serializer(
-    name="InspectionListEnvelope",
-    fields={"data": InspectionSerializer(many=True)},
-)
-
-ErrorResponseSerializer = inline_serializer(
-    name="InspectionErrorResponse",
-    fields={"error": serializers.CharField()},
-)
 
 
 @extend_schema(tags=["inspections"])
@@ -40,7 +25,7 @@ ErrorResponseSerializer = inline_serializer(
             "`data` envelope. Requires an authenticated user."
         ),
         responses={
-            200: InspectionListEnvelopeSerializer,
+            200: InspectionSerializer(many=True),
             401: OpenApiResponse(
                 description="Authentication credentials were not provided."
             ),
@@ -57,7 +42,7 @@ ErrorResponseSerializer = inline_serializer(
         ),
         request=InspectionSerializer,
         responses={
-            201: InspectionEnvelopeSerializer,
+            201: InspectionSerializer,
             400: OpenApiResponse(
                 description="Validation error (e.g. responsible user is not an auditor)."
             ),
@@ -83,7 +68,9 @@ class InspectionListAPIView(APIView):
     serializer_class = InspectionSerializer
 
     def get_permissions(self):
-        return [IsAuthenticated(), isAuditor()]
+        if self.request.method == "GET":
+            return [IsAuthenticated()]
+        return [IsAuthenticated(), IsAuditor()]
 
     def get(self, request):
         inspections = InspectionServices.list_all()
@@ -108,7 +95,7 @@ class InspectionListAPIView(APIView):
         summary="Retrieve inspection",
         description="Returns a single inspection identified by its primary key.",
         responses={
-            200: InspectionEnvelopeSerializer,
+            200: InspectionSerializer,
             401: OpenApiResponse(
                 description="Authentication credentials were not provided."
             ),
@@ -116,7 +103,7 @@ class InspectionListAPIView(APIView):
                 description="Authenticated user is not authorized to retrieve inspections."
             ),
             404: OpenApiResponse(
-                response=ErrorResponseSerializer,
+                response=serializers.CharField(),
                 description="Inspection not found.",
             ),
         },
@@ -130,7 +117,7 @@ class InspectionListAPIView(APIView):
         ),
         request=InspectionSerializer,
         responses={
-            200: InspectionEnvelopeSerializer,
+            200: InspectionSerializer,
             400: OpenApiResponse(description="Validation error."),
             401: OpenApiResponse(
                 description="Authentication credentials were not provided."
@@ -139,7 +126,10 @@ class InspectionListAPIView(APIView):
                 description="Authenticated user is not authorized to update inspections."
             ),
             404: OpenApiResponse(
-                response=ErrorResponseSerializer,
+                response=inline_serializer(
+                    name="InspectionErrorResponse",
+                    fields={"error": serializers.CharField()},
+                ),
                 description="Inspection not found.",
             ),
         },
@@ -159,7 +149,10 @@ class InspectionListAPIView(APIView):
                 description="Authenticated user is not authorized to delete inspections."
             ),
             404: OpenApiResponse(
-                response=ErrorResponseSerializer,
+                response=inline_serializer(
+                    name="InspectionErrorResponse",
+                    fields={"error": serializers.CharField()},
+                ),
                 description="Inspection not found.",
             ),
         },
@@ -169,26 +162,17 @@ class InspectionDetailAPIView(APIView):
     serializer_class = InspectionSerializer
 
     def get_permissions(self):
-        return [IsAuthenticated(), isAuditor()]
+        if self.request.method == "GET":
+            return [IsAuthenticated()]
+        return [IsAuthenticated(), IsAuditor()]
 
     def get(self, request, pk):
-        try:
-            inspection = InspectionServices.get(pk)
-        except Http404:
-            return Response(
-                {"error": "Inspection not found."}, status=status.HTTP_404_NOT_FOUND
-            )
+        inspection = InspectionServices.get(pk)
         serializer = InspectionSerializer(inspection)
         return Response({"data": serializer.data}, status=status.HTTP_200_OK)
 
     def patch(self, request, pk):
-        try:
-            inspection = InspectionServices.get(pk)
-        except Http404:
-            return Response(
-                {"error": "Inspection not found."}, status=status.HTTP_404_NOT_FOUND
-            )
-
+        inspection = InspectionServices.get(pk)
         serializer = InspectionSerializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
 
@@ -197,10 +181,5 @@ class InspectionDetailAPIView(APIView):
         return Response({"data": response.data}, status=status.HTTP_200_OK)
 
     def delete(self, request, pk):
-        try:
-            InspectionServices.delete(pk)
-        except Http404:
-            return Response(
-                {"error": "Inspection not found."}, status=status.HTTP_404_NOT_FOUND
-            )
+        InspectionServices.delete(pk)
         return Response(status=status.HTTP_204_NO_CONTENT)

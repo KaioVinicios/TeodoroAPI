@@ -5,8 +5,6 @@ from apps.inspection.validators import User, validate_responsible_is_auditor
 
 
 class InspectionSerializer(serializers.ModelSerializer):
-    id = serializers.IntegerField(read_only=True)
-
     responsible = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(),
         allow_null=False,
@@ -19,12 +17,5 @@ class InspectionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Inspection
-        fields = [
-            "id",
-            "is_complete",
-            "completion_date",
-            "responsible",
-            "created_at",
-            "updated_at",
-        ]
+        fields = "__all__"
         read_only_fields = ["id", "created_at", "updated_at"]
