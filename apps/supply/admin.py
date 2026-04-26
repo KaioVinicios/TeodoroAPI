@@ -1,3 +1,5 @@
 from django.contrib import admin
 
-# Register your models here.
+from apps.supply.models import Supply
+
+admin.site.register(Supply)
