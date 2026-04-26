@@ -18,7 +18,6 @@ api_patterns = [
     path("accounts/", include("apps.account.urls")),
     path("organizations/", include("apps.organization.urls")),
     path("supply-lots/", include("apps.supply_lot.urls")),
-
 ]
 
 urlpatterns = [
