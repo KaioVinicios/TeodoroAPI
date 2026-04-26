@@ -23,6 +23,14 @@ class SupplyLotListAPIView(APIView):
         }, status = status.HTTP_201_CREATED)
     
 class SupplyLotDetailAPIView(APIView):
+    def handle_exception(self, exc):
+        if isinstance(exc, Http404):
+            return Response(
+                {"error": "SupplyLot não encontrado."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        return super().handle_exception(exc)
+
     def get(self, request, pk):
         supply_lot_model = SupplyLotService.get(pk)
         serializer = SupplyLotSerializer(supply_lot_model)
