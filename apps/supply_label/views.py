@@ -2,10 +2,36 @@ from django.http import Http404
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from drf_spectacular.utils import (
+    extend_schema,
+    extend_schema_view,
+    OpenApiResponse,
+)
 from apps.supply_label.services import SupplyLabelServices
 from apps.supply_label.serializers import SupplyLabelSerializer
 
 
+@extend_schema(tags=["supply-labels"])
+@extend_schema_view(
+    get=extend_schema(
+        operation_id="supply_labels_list",
+        summary="List supply labels",
+        description="Returns all supply labels registered in the system.",
+        responses={
+            401: OpenApiResponse(description="Authentication credentials were not provided."),
+        },
+    ),
+    post=extend_schema(
+        operation_id="supply_labels_create",
+        summary="Create supply label",
+        description="Creates a new supply label entry.",
+        request=SupplyLabelSerializer,
+        responses={
+            400: OpenApiResponse(description="Validation error."),
+            401: OpenApiResponse(description="Authentication credentials were not provided."),
+        },
+    ),
+)
 class SupplyLabelListAPIView(APIView):
 
     def get(self, request):
@@ -23,6 +49,36 @@ class SupplyLabelListAPIView(APIView):
         return Response({"data": response.data}, status=status.HTTP_201_CREATED)
 
 
+@extend_schema(tags=["supply-labels"])
+@extend_schema_view(
+    get=extend_schema(
+        operation_id="supply_labels_retrieve",
+        summary="Retrieve supply label",
+        responses={
+            401: OpenApiResponse(description="Authentication credentials were not provided."),
+            404: OpenApiResponse(description="Supply label not found."),
+        },
+    ),
+    patch=extend_schema(
+        operation_id="supply_labels_partial_update",
+        summary="Partially update supply label",
+        request=SupplyLabelSerializer,
+        responses={
+            400: OpenApiResponse(description="Validation error."),
+            401: OpenApiResponse(description="Authentication credentials were not provided."),
+            404: OpenApiResponse(description="Supply label not found."),
+        },
+    ),
+    delete=extend_schema(
+        operation_id="supply_labels_destroy",
+        summary="Delete supply label",
+        responses={
+            204: OpenApiResponse(description="Supply label deleted."),
+            401: OpenApiResponse(description="Authentication credentials were not provided."),
+            404: OpenApiResponse(description="Supply label not found."),
+        },
+    ),
+)
 class SupplyLabelDetailAPIView(APIView):
 
     def get(self, request, pk):
