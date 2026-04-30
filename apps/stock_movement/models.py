@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.exceptions import ValidationError
 from apps.supply.models import Supply
 from apps.request.models import Request
 from django.contrib.auth.models import User
@@ -26,18 +27,19 @@ class StockMovement(TimeStampedModel):
         related_name="stock_movements",
         verbose_name=_("supply"),
     )
-    supply_lots = (
-        models.ManyToManyField(  # Should it be in Supply or SupplyMovement?
-            SupplyLot,
-            related_name="stock_movements",
-            verbose_name=_("supply lots"),
-        )
+    supply_lots = models.ManyToManyField(
+        SupplyLot,
+        related_name="stock_movements",
+        verbose_name=_("supply lots"),
     )
     request = models.OneToOneField(
         Request,
         on_delete=models.PROTECT,
         related_name="stock_movement",
         verbose_name=_("request"),
+    )
+    quantity = models.FloatField(
+        verbose_name=_("quantity"),
     )
     description = models.TextField(
         verbose_name=_("description"),
@@ -49,6 +51,26 @@ class StockMovement(TimeStampedModel):
         verbose_name = _("stock movement")
         verbose_name_plural = _("stock movements")
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(
+                fields=["supply", "-created_at"],
+                name="sm_supply_created_idx",
+            ),
+            models.Index(
+                fields=["user", "-created_at"],
+                name="sm_user_created_idx",
+            ),
+            models.Index(
+                fields=["supply", "type_of_movement"],
+                name="sm_supply_type_idx",
+            ),
+        ]
+
+    def clean(self):
+        if self.request_id and not self.request.is_approved:
+            raise ValidationError(
+                {"request": _("Stock movement requires an approved request.")}
+            )
 
     def __str__(self):
         return (
