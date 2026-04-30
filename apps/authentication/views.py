@@ -1,7 +1,7 @@
 import logging
 from datetime import timedelta
 from django.conf import settings
-from rest_framework import permissions
+from rest_framework import permissions, serializers
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -15,6 +15,18 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
     TokenVerifyView,
+)
+from drf_spectacular.utils import (
+    extend_schema,
+    extend_schema_view,
+    inline_serializer,
+    OpenApiResponse,
+)
+
+
+LogoutResponseSerializer = inline_serializer(
+    name="LogoutResponse",
+    fields={"detail": serializers.CharField()},
 )
 
 logger = logging.getLogger(__name__)
@@ -220,8 +232,24 @@ class CookieTokenVerifyView(TokenVerifyView):
         return Response({"message": "Token is valid."}, status=status.HTTP_200_OK)
 
 
+@extend_schema(tags=["authentication"])
+@extend_schema_view(
+    post=extend_schema(
+        operation_id="auth_logout",
+        summary="Logout",
+        description=(
+            "Blacklists the refresh token (if present) and clears the access "
+            "and refresh cookies."
+        ),
+        request=None,
+        responses={
+            205: LogoutResponseSerializer,
+        },
+    ),
+)
 class CookieLogoutView(APIView):
     permission_classes = [permissions.AllowAny]
+    serializer_class = LogoutResponseSerializer
 
     def post(self, request):
         jwt_settings = getattr(settings, "SIMPLE_JWT", {})
