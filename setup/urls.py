@@ -21,6 +21,7 @@ api_patterns = [
     path("inspections/", include("apps.inspection.urls")),
     path("supplies/", include("apps.supply.urls")),
     path("requests/", include("apps.request.urls")),
+    path("stock-movements/", include("apps.stock_movement.urls")),
 ]
 
 urlpatterns = [
