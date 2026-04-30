@@ -20,6 +20,7 @@ api_patterns = [
     path("supply-lots/", include("apps.supply_lot.urls")),
     path("inspections/", include("apps.inspection.urls")),
     path("supplies/", include("apps.supply.urls")),
+    path("requests/", include("apps.request.urls")),
 ]
 
 urlpatterns = [
