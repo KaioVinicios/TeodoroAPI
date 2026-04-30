@@ -1,9 +1,12 @@
 from django.db import models
+from django.db.models import Sum
 from apps.core.models import TimeStampedModel
 from django.utils.translation import gettext_lazy as _
 from apps.supply_label.models import SupplyLabel
 from apps.supply.choices import SupplyStatus, UnitOfMeasure
 from apps.supply.validators import validate_status, validate_unit_of_measure
+from apps.supply_lot.choices import SupplyLotStatus
+
 
 class Supply(TimeStampedModel):
     supply_label = models.ForeignKey(
@@ -29,10 +32,15 @@ class Supply(TimeStampedModel):
         validators=[validate_unit_of_measure],
     )
 
-    # @property
-    # def quantity(self):
-    #     # To be defined — will aggregate from related supply lots or stock entries
-    #     pass
+    # Only accepts approved supply lots for stock movements
+    @property
+    def quantity(self):
+        approved_movements = self.stock_movements.filter(
+            pk__in=self.stock_movements.filter(
+                supply_lots__status=SupplyLotStatus.APPROVED
+            ).values("pk")
+        )
+        return approved_movements.aggregate(total=Sum("quantity"))["total"] or 0
 
     class Meta:
         verbose_name = _("supply")
