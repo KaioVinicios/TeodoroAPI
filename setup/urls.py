@@ -19,6 +19,7 @@ api_patterns = [
     path("organizations/", include("apps.organization.urls")),
     path("inspections/", include("apps.inspection.urls")),
     path("supplies/", include("apps.supply.urls")),
+    path("requests/", include("apps.request.urls")),
 ]
 
 urlpatterns = [

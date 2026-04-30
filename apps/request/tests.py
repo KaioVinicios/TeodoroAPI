@@ -3,30 +3,29 @@ from django.contrib.auth.models import User
 from django.urls import reverse
 import json
 
+from rest_framework_simplejwt.tokens import RefreshToken
+
 from apps.request.models import Request
 from apps.request.choices import RequestType
 from apps.supply.models import Supply
 from apps.supply.choices import SupplyStatus, UnitOfMeasure
 from apps.supply_label.models import SupplyLabel
 
-class RequestTestCase(TestCase):
 
+class RequestTestCase(TestCase):
 
     def setUp(self):
         self.client = Client()
 
-        # Create user
         self.user = User.objects.create_user(
             username="testuser",
             password="testpass123"
         )
 
-        # Login user
-        self.client.login(username="testuser", password="testpass123")
-
-        # Create Supply dependencies
+        refresh = RefreshToken.for_user(self.user)
+        self.access_token = str(refresh.access_token)
+        self.client.defaults["HTTP_AUTHORIZATION"] = f"Bearer {self.access_token}"
         self.supply_label = SupplyLabel.objects.create(name="Test Label")
-
         self.supply = Supply.objects.create(
             supply_label=self.supply_label,
             status=SupplyStatus.AVAILABLE,
@@ -34,10 +33,19 @@ class RequestTestCase(TestCase):
             unit_of_measure=UnitOfMeasure.UNIT
         )
 
-        # URLs
         self.list_url = reverse("request:request_list")
 
-    def get_payload(self):
+  
+    def get_model_payload(self):
+        return {
+            "user": self.user, 
+            "request_type": RequestType.ENTRY,
+            "supply": self.supply, 
+            "description": "Test request",
+            "quantity": 10
+        }
+
+    def get_api_payload(self):
         return {
             "user": self.user.id,
             "request_type": RequestType.ENTRY,
@@ -49,7 +57,7 @@ class RequestTestCase(TestCase):
     def test_create_request(self):
         response = self.client.post(
             self.list_url,
-            data=json.dumps(self.get_payload()),
+            data=json.dumps(self.get_api_payload()),
             content_type="application/json"
         )
 
@@ -60,7 +68,7 @@ class RequestTestCase(TestCase):
         self.assertEqual(data["data"]["quantity"], 10)
 
     def test_list_requests(self):
-        Request.objects.create(**self.get_payload())
+        Request.objects.create(**self.get_model_payload())
 
         response = self.client.get(self.list_url)
 
@@ -71,7 +79,7 @@ class RequestTestCase(TestCase):
         self.assertEqual(len(data["data"]), 1)
 
     def test_retrieve_request(self):
-        request_obj = Request.objects.create(**self.get_payload())
+        request_obj = Request.objects.create(**self.get_model_payload())
 
         url = reverse("request:request_detail", args=[request_obj.id])
         response = self.client.get(url)
@@ -82,7 +90,7 @@ class RequestTestCase(TestCase):
         self.assertEqual(data["data"]["id"], request_obj.id)
 
     def test_update_request(self):
-        request_obj = Request.objects.create(**self.get_payload())
+        request_obj = Request.objects.create(**self.get_model_payload())
 
         url = reverse("request:request_detail", args=[request_obj.id])
 
@@ -98,7 +106,7 @@ class RequestTestCase(TestCase):
         self.assertEqual(data["data"]["quantity"], 20)
 
     def test_delete_request(self):
-        request_obj = Request.objects.create(**self.get_payload())
+        request_obj = Request.objects.create(**self.get_model_payload())
 
         url = reverse("request:request_detail", args=[request_obj.id])
         response = self.client.delete(url)
@@ -107,21 +115,18 @@ class RequestTestCase(TestCase):
         self.assertFalse(Request.objects.filter(id=request_obj.id).exists())
 
     def test_invalid_quantity(self):
-        payload = self.get_payload()
-        payload["quantity"] = 0
+        payload = self.get_api_payload()
+        payload["quantity"] = 0  
 
         response = self.client.post(
             self.list_url,
             data=json.dumps(payload),
             content_type="application/json"
         )
-
+        
         self.assertEqual(response.status_code, 400)
 
     def test_unauthenticated_access(self):
-        self.client.logout()
-
+        self.client.defaults.pop("HTTP_AUTHORIZATION", None)
         response = self.client.get(self.list_url)
-
         self.assertEqual(response.status_code, 401)
-
