@@ -1,3 +1,4 @@
 from django.contrib import admin
+from apps.stock_movement.models import StockMovement
 
-# Register your models here.
+admin.site.register(StockMovement)

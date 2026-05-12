@@ -1,3 +1,4 @@
 from django.contrib import admin
+from apps.supply_lot.models import SupplyLot
 
-# Register your models here.
+admin.site.register(SupplyLot)
