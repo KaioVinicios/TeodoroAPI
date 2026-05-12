@@ -24,6 +24,24 @@ from drf_spectacular.utils import (
 )
 
 
+LoginRequestSerializer = inline_serializer(
+    name="LoginRequest",
+    fields={
+        "username": serializers.CharField(),
+        "password": serializers.CharField(),
+    },
+)
+
+MessageResponseSerializer = inline_serializer(
+    name="AuthMessageResponse",
+    fields={"message": serializers.CharField()},
+)
+
+AuthErrorResponseSerializer = inline_serializer(
+    name="AuthErrorResponse",
+    fields={"error": serializers.CharField()},
+)
+
 LogoutResponseSerializer = inline_serializer(
     name="LogoutResponse",
     fields={"detail": serializers.CharField()},
@@ -32,6 +50,30 @@ LogoutResponseSerializer = inline_serializer(
 logger = logging.getLogger(__name__)
 
 
+@extend_schema(tags=["authentication"])
+@extend_schema_view(
+    post=extend_schema(
+        operation_id="auth_login",
+        summary="Obtain JWT pair via cookies",
+        description=(
+            "Authenticates a user with username and password. On success, sets "
+            "the access and refresh JWTs as cookies and returns a confirmation "
+            "message; the tokens themselves are not returned in the body."
+        ),
+        request=LoginRequestSerializer,
+        responses={
+            200: MessageResponseSerializer,
+            401: OpenApiResponse(
+                response=AuthErrorResponseSerializer,
+                description="Invalid credentials.",
+            ),
+            500: OpenApiResponse(
+                response=AuthErrorResponseSerializer,
+                description="Authentication failed (cookies could not be set).",
+            ),
+        },
+    ),
+)
 class CookieObtainPairView(TokenObtainPairView):
     permission_classes = [permissions.AllowAny]
 
@@ -114,6 +156,29 @@ class CookieObtainPairView(TokenObtainPairView):
             )
 
 
+@extend_schema(tags=["authentication"])
+@extend_schema_view(
+    post=extend_schema(
+        operation_id="auth_token_refresh",
+        summary="Refresh access token via cookie",
+        description=(
+            "Reads the refresh token from the request cookie, issues a new "
+            "access token, and updates both cookies. Does not accept any body."
+        ),
+        request=None,
+        responses={
+            200: MessageResponseSerializer,
+            401: OpenApiResponse(
+                response=AuthErrorResponseSerializer,
+                description="Refresh token is missing, invalid or expired.",
+            ),
+            500: OpenApiResponse(
+                response=AuthErrorResponseSerializer,
+                description="Refresh succeeded but cookies could not be set.",
+            ),
+        },
+    ),
+)
 class CookieRefreshTokenView(TokenRefreshView):
     permission_classes = [permissions.AllowAny]
 
@@ -202,6 +267,25 @@ class CookieRefreshTokenView(TokenRefreshView):
         return response
 
 
+@extend_schema(tags=["authentication"])
+@extend_schema_view(
+    post=extend_schema(
+        operation_id="auth_token_verify",
+        summary="Verify access token via cookie",
+        description=(
+            "Validates the access token stored in the request cookie. Does not "
+            "accept any body."
+        ),
+        request=None,
+        responses={
+            200: MessageResponseSerializer,
+            401: OpenApiResponse(
+                response=AuthErrorResponseSerializer,
+                description="Access token is missing, invalid or expired.",
+            ),
+        },
+    ),
+)
 class CookieTokenVerifyView(TokenVerifyView):
     permission_classes = [permissions.AllowAny]
 
