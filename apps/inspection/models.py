@@ -29,4 +29,4 @@ class Inspection(TimeStampedModel):
 
     def __str__(self):
         status = _("complete") if self.is_complete else _("pending")
-        return f"Inspection {self.pk} — {self.date} ({status})"
+        return f"Inspection {self.pk} — {self.completion_date} ({status})"
