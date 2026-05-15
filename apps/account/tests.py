@@ -246,6 +246,49 @@ class AccountServicesTests(TestCase):
         self.assertEqual(User.objects.count(), 0)
         self.assertEqual(Account.objects.count(), 0)
 
+    def test_create_admin_promotes_user_to_superuser(self):
+        """
+        Creating an account with ``account_type='admin'`` must promote the
+        underlying ``User`` to ``is_superuser=True`` and ``is_staff=True``.
+        """
+        account = AccountServices.create(self._valid_data(account_type="admin"))
+        account.user.refresh_from_db()
+        self.assertTrue(account.user.is_superuser)
+        self.assertTrue(account.user.is_staff)
+
+    def test_create_non_admin_does_not_promote_user(self):
+        """
+        Creating an account with any non-admin ``account_type`` must leave
+        ``is_superuser`` and ``is_staff`` as ``False``.
+        """
+        account = AccountServices.create(self._valid_data(account_type="customer"))
+        account.user.refresh_from_db()
+        self.assertFalse(account.user.is_superuser)
+        self.assertFalse(account.user.is_staff)
+
+    def test_update_to_admin_promotes_user(self):
+        """
+        Switching an existing account to ``account_type='admin'`` must
+        promote the linked ``User`` to superuser/staff.
+        """
+        account = AccountServices.create(self._valid_data(account_type="customer"))
+        AccountServices.update(account, {"account_type": "admin"})
+        account.user.refresh_from_db()
+        self.assertTrue(account.user.is_superuser)
+        self.assertTrue(account.user.is_staff)
+
+    def test_update_away_from_admin_revokes_superuser(self):
+        """
+        Demoting an admin account to any other type must revoke
+        ``is_superuser`` and ``is_staff`` on the linked ``User`` so the
+        admin <=> superuser invariant holds in both directions.
+        """
+        account = AccountServices.create(self._valid_data(account_type="admin"))
+        AccountServices.update(account, {"account_type": "operator"})
+        account.user.refresh_from_db()
+        self.assertFalse(account.user.is_superuser)
+        self.assertFalse(account.user.is_staff)
+
     def test_list_all_returns_queryset(self):
         """``list_all`` must return every persisted ``Account`` (sanity-check on the queryset)."""
         AccountServices.create(self._valid_data())

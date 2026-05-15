@@ -2,7 +2,14 @@ from django.contrib.auth.models import User
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 
+from apps.account.choices import AccountType
 from apps.account.models import Account
+
+
+def _sync_admin_flags(user, account_type):
+    is_admin = account_type == AccountType.ADMIN
+    user.is_superuser = is_admin
+    user.is_staff = is_admin
 
 
 class AccountServices:
@@ -27,6 +34,8 @@ class AccountServices:
         user = User.objects.create_user(password=password, **user_data)
         account = Account(user=user, **data)
         account.full_clean()
+        _sync_admin_flags(user, account.account_type)
+        user.save(update_fields=["is_superuser", "is_staff"])
         account.save()
         return account
 
@@ -42,11 +51,12 @@ class AccountServices:
             setattr(user, attr, value)
         if password is not None:
             user.set_password(password)
-        user.save()
 
         for attr, value in data.items():
             setattr(instance, attr, value)
         instance.full_clean()
+        _sync_admin_flags(user, instance.account_type)
+        user.save()
         instance.save()
         return instance
 
