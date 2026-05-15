@@ -15,6 +15,12 @@ from apps.inspection.serializers import InspectionSerializer
 from apps.inspection.services import InspectionServices
 
 
+InspectionErrorResponseSerializer = inline_serializer(
+    name="InspectionErrorResponse",
+    fields={"error": serializers.CharField()},
+)
+
+
 @extend_schema(tags=["inspections"])
 @extend_schema_view(
     get=extend_schema(
@@ -103,7 +109,7 @@ class InspectionListAPIView(APIView):
                 description="Authenticated user is not authorized to retrieve inspections."
             ),
             404: OpenApiResponse(
-                response=serializers.CharField(),
+                response=InspectionErrorResponseSerializer,
                 description="Inspection not found.",
             ),
         },
@@ -126,10 +132,7 @@ class InspectionListAPIView(APIView):
                 description="Authenticated user is not authorized to update inspections."
             ),
             404: OpenApiResponse(
-                response=inline_serializer(
-                    name="InspectionErrorResponse",
-                    fields={"error": serializers.CharField()},
-                ),
+                response=InspectionErrorResponseSerializer,
                 description="Inspection not found.",
             ),
         },
@@ -149,10 +152,7 @@ class InspectionListAPIView(APIView):
                 description="Authenticated user is not authorized to delete inspections."
             ),
             404: OpenApiResponse(
-                response=inline_serializer(
-                    name="InspectionErrorResponse",
-                    fields={"error": serializers.CharField()},
-                ),
+                response=InspectionErrorResponseSerializer,
                 description="Inspection not found.",
             ),
         },
