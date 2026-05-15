@@ -130,7 +130,7 @@ USE_TZ = True
 STATIC_URL = "static/"
 
 SIMPLE_JWT = {
-    "AUTH_COOKIE_SECURE": True,
+    "AUTH_COOKIE_SECURE": False,  # Change to True at production.
     "ROTATE_REFRESH_TOKENS": True,
     "AUTH_COOKIE_SAMESITE": "None",  # Review to set the correct value to production.
     "AUTH_COOKIE_HTTP_ONLY": False,  # Change to True at production.
@@ -142,9 +142,15 @@ SIMPLE_JWT = {
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework_simplejwt.authentication.JWTAuthentication",  # Maybe change to CookieJWTAuthentication
+        "apps.authentication.authentication.CookieJWTAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
+}
+
+SPECTACULAR_SETTINGS = {
+    "ENUM_NAME_OVERRIDES": {
+        "RequestTypeEnum": "apps.request.choices.RequestType",
+    },
 }
