@@ -105,7 +105,10 @@ class AccountListAPIView(APIView):
 
         account = AccountServices.create(serializer.validated_data)
         response = AccountSerializer(account)
-        return Response({"data": response.data}, status=status.HTTP_201_CREATED)
+        return Response(
+            {"message": "Account created succefully.", "data": response.data},
+            status=status.HTTP_201_CREATED,
+        )
 
 
 @extend_schema(tags=["accounts"])
