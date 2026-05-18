@@ -10,7 +10,7 @@ from rest_framework import serializers, status
 from rest_framework.views import APIView, Response
 from rest_framework.permissions import IsAuthenticated
 
-from apps.inspection.permissions import IsAuditor
+from apps.inspection.permissions import IsAuditor, IsAuditorOrAdmin
 from apps.inspection.serializers import InspectionSerializer
 from apps.inspection.services import InspectionServices
 
@@ -76,7 +76,7 @@ class InspectionListAPIView(APIView):
     def get_permissions(self):
         if self.request.method == "GET":
             return [IsAuthenticated()]
-        return [IsAuthenticated(), IsAuditor()]
+        return [IsAuthenticated(), IsAuditorOrAdmin()]
 
     def get(self, request):
         inspections = InspectionServices.list_all()
