@@ -71,17 +71,25 @@ class StockMovementListAPIView(APIView):
         return Response({"data": serializer.data}, status=status.HTTP_200_OK)
 
     def post(self, request):
-        serializer = StockMovementSerializer(data=request.data)
+        is_many = isinstance(request.data, list)
+        serializer = StockMovementSerializer(data=request.data, many=is_many)
         serializer.is_valid(raise_exception=True)
 
         try:
-            movement = StockMovementServices.create(serializer.validated_data)
+            if is_many:
+                movements = StockMovementServices.bulk_create(
+                    serializer.validated_data
+                )
+                response = StockMovementSerializer(movements, many=True)
+            else:
+                movement = StockMovementServices.create(serializer.validated_data)
+                response = StockMovementSerializer(movement)
         except DjangoValidationError as exc:
             return Response(
                 {"error": exc.messages},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        response = StockMovementSerializer(movement)
+
         return Response({"data": response.data}, status=status.HTTP_201_CREATED)
 
 

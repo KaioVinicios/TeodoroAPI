@@ -64,10 +64,17 @@ class SupplyLotListAPIView(APIView):
         return Response({"data": serializer.data}, status=status.HTTP_200_OK)
 
     def post(self, request):
-        serializer = SupplyLotSerializer(data=request.data)
+        is_many = isinstance(request.data, list)
+        serializer = SupplyLotSerializer(data=request.data, many=is_many)
         serializer.is_valid(raise_exception=True)
-        supply_lot = SupplyLotService.create(serializer.validated_data)
-        response = SupplyLotSerializer(supply_lot)
+
+        if is_many:
+            supply_lots = SupplyLotService.bulk_create(serializer.validated_data)
+            response = SupplyLotSerializer(supply_lots, many=True)
+        else:
+            supply_lot = SupplyLotService.create(serializer.validated_data)
+            response = SupplyLotSerializer(supply_lot)
+
         return Response({"data": response.data}, status=status.HTTP_201_CREATED)
 
 

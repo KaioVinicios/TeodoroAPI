@@ -51,6 +51,13 @@ class StockMovementServices:
 
     @staticmethod
     @transaction.atomic
+    def bulk_create(validated_data):
+        return [
+            StockMovementServices.create(item) for item in validated_data
+        ]
+
+    @staticmethod
+    @transaction.atomic
     def update(instance, validated_data):
         if "description" in validated_data:
             instance.description = validated_data["description"]

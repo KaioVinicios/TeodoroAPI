@@ -13,6 +13,11 @@ class SupplyLotService:
     @staticmethod
     def create(validated_data):
         return SupplyLot.objects.create(**validated_data)
+
+    @staticmethod
+    def bulk_create(validated_data):
+        instances = [SupplyLot(**item) for item in validated_data]
+        return SupplyLot.objects.bulk_create(instances)
     
     @staticmethod
     def update(instance, validated_data):

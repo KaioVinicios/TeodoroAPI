@@ -12,8 +12,8 @@ from apps.supply.services import SupplyServices
 from apps.supply.serializers import SupplySerializer
 from apps.account.permissions import IsNotCustomer
 
-
 # ── Supply views ──────────────────────────────────────────────────────────────
+
 
 @extend_schema(tags=["supplies"])
 @extend_schema_view(
@@ -22,7 +22,9 @@ from apps.account.permissions import IsNotCustomer
         summary="List supplies",
         description="Returns all supplies registered in the system.",
         responses={
-            401: OpenApiResponse(description="Authentication credentials were not provided."),
+            401: OpenApiResponse(
+                description="Authentication credentials were not provided."
+            ),
         },
     ),
     post=extend_schema(
@@ -32,7 +34,9 @@ from apps.account.permissions import IsNotCustomer
         request=SupplySerializer,
         responses={
             400: OpenApiResponse(description="Validation error."),
-            401: OpenApiResponse(description="Authentication credentials were not provided."),
+            401: OpenApiResponse(
+                description="Authentication credentials were not provided."
+            ),
             403: OpenApiResponse(description="Customers cannot access this resource."),
         },
     ),
@@ -51,10 +55,15 @@ class SupplyListAPIView(APIView):
         return Response({"data": serializer.data}, status=status.HTTP_200_OK)
 
     def post(self, request):
-        serializer = SupplySerializer(data=request.data)
+        is_bulk = isinstance(request.data, list)
+        serializer = SupplySerializer(data=request.data, many=is_bulk)
         serializer.is_valid(raise_exception=True)
-        supply = SupplyServices.create(serializer.validated_data)
-        response = SupplySerializer(supply)
+        if is_bulk:
+            supplies = SupplyServices.bulk_create(serializer.validated_data)
+            response = SupplySerializer(supplies, many=True)
+        else:
+            supply = SupplyServices.create(serializer.validated_data)
+            response = SupplySerializer(supply)
         return Response({"data": response.data}, status=status.HTTP_201_CREATED)
 
 
@@ -64,7 +73,9 @@ class SupplyListAPIView(APIView):
         operation_id="supplies_retrieve",
         summary="Retrieve supply",
         responses={
-            401: OpenApiResponse(description="Authentication credentials were not provided."),
+            401: OpenApiResponse(
+                description="Authentication credentials were not provided."
+            ),
             404: OpenApiResponse(description="Supply not found."),
         },
     ),
@@ -74,7 +85,9 @@ class SupplyListAPIView(APIView):
         request=SupplySerializer,
         responses={
             400: OpenApiResponse(description="Validation error."),
-            401: OpenApiResponse(description="Authentication credentials were not provided."),
+            401: OpenApiResponse(
+                description="Authentication credentials were not provided."
+            ),
             403: OpenApiResponse(description="Customers cannot access this resource."),
             404: OpenApiResponse(description="Supply not found."),
         },
@@ -84,7 +97,9 @@ class SupplyListAPIView(APIView):
         summary="Delete supply",
         responses={
             204: OpenApiResponse(description="Supply deleted."),
-            401: OpenApiResponse(description="Authentication credentials were not provided."),
+            401: OpenApiResponse(
+                description="Authentication credentials were not provided."
+            ),
             403: OpenApiResponse(description="Customers cannot access this resource."),
             404: OpenApiResponse(description="Supply not found."),
         },
@@ -99,13 +114,13 @@ class SupplyDetailAPIView(APIView):
         return [IsAuthenticated()]
 
     def get(self, request, pk):
-        
+
         supply = SupplyServices.get(pk)
         serializer = SupplySerializer(supply)
         return Response({"data": serializer.data}, status=status.HTTP_200_OK)
 
     def patch(self, request, pk):
-       
+
         supply = SupplyServices.get(pk)
         serializer = SupplySerializer(supply, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -114,6 +129,6 @@ class SupplyDetailAPIView(APIView):
         return Response({"data": response.data}, status=status.HTTP_200_OK)
 
     def delete(self, request, pk):
-       
-        SupplyServices.delete(pk) 
+
+        SupplyServices.delete(pk)
         return Response(status=status.HTTP_204_NO_CONTENT)

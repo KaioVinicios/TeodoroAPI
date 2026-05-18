@@ -34,3 +34,8 @@ class SupplyServices:
     def delete(pk):
         supply = get_object_or_404(Supply, pk=pk)
         supply.delete()
+
+    @staticmethod
+    def bulk_create(validated_data):
+        instances = [Supply(**item) for item in validated_data]
+        return Supply.objects.bulk_create(instances)

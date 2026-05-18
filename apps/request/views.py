@@ -61,11 +61,17 @@ class RequestListAPIView(APIView):
         return Response({"data": serializer.data}, status=status.HTTP_200_OK)
 
     def post(self, request):
-        serializer = RequestSerializer(data=request.data)
+        is_many = isinstance(request.data, list)
+        serializer = RequestSerializer(data=request.data, many=is_many)
         serializer.is_valid(raise_exception=True)
 
-        request_obj = RequestServices.create(serializer.validated_data)
-        response = RequestSerializer(request_obj)
+        if is_many:
+            requests = RequestServices.bulk_create(serializer.validated_data)
+            response = RequestSerializer(requests, many=True)
+        else:
+            request_obj = RequestServices.create(serializer.validated_data)
+            response = RequestSerializer(request_obj)
+
         return Response({"data": response.data}, status=status.HTTP_201_CREATED)
     
 

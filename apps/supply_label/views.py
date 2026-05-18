@@ -40,11 +40,16 @@ class SupplyLabelListAPIView(APIView):
         return Response({"data": serializer.data}, status=status.HTTP_200_OK)
 
     def post(self, request):
-        serializer = SupplyLabelSerializer(data=request.data)
+        is_many = isinstance(request.data, list)
+        serializer = SupplyLabelSerializer(data=request.data, many=is_many)
         serializer.is_valid(raise_exception=True)
 
-        supply_label = SupplyLabelServices.create(serializer.validated_data)
-        response = SupplyLabelSerializer(supply_label)
+        if is_many:
+            supply_labels = SupplyLabelServices.bulk_create(serializer.validated_data)
+            response = SupplyLabelSerializer(supply_labels, many=True)
+        else:
+            supply_label = SupplyLabelServices.create(serializer.validated_data)
+            response = SupplyLabelSerializer(supply_label)
 
         return Response({"data": response.data}, status=status.HTTP_201_CREATED)
 

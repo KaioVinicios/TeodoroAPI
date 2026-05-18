@@ -17,6 +17,11 @@ class SupplyLabelServices:
         return SupplyLabel.objects.create(**validated_data)
 
     @staticmethod
+    def bulk_create(validated_data):
+        instances = [SupplyLabel(**item) for item in validated_data]
+        return SupplyLabel.objects.bulk_create(instances)
+
+    @staticmethod
     def update(instance, validated_data):
         for attr, value in validated_data.items():
             setattr(instance, attr, value)

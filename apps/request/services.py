@@ -26,6 +26,17 @@ class RequestServices:
 
     @staticmethod
     @transaction.atomic
+    def bulk_create(validated_data):
+        instances = []
+        for item in validated_data:
+            request = Request(**dict(item))
+            request.full_clean()
+            request.save()
+            instances.append(request)
+        return instances
+
+    @staticmethod
+    @transaction.atomic
     def update(instance, validated_data):
         for attr, value in dict(validated_data).items():
             setattr(instance, attr, value)
