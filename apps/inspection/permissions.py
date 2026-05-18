@@ -16,3 +16,18 @@ class IsAuditor(BasePermission):
             return False
 
         return account.account_type == AccountType.AUDITOR
+
+
+class IsAuditorOrAdmin(BasePermission):
+    message = "Only auditors or admins can access this resource."
+
+    def has_permission(self, request, view):
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+
+        account = getattr(user, "account", None)
+        if account is None:
+            return False
+
+        return account.account_type in (AccountType.AUDITOR, AccountType.ADMIN)
