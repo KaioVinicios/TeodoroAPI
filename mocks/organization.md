@@ -20,7 +20,7 @@ Organizações são clínicas/hospitais veterinários e fornecedores parceiros. 
   },
   {
     "name": "Hospital Veterinário Bichinho Feliz",
-    "cnpj": "34.234.787/0001-65",
+    "cnpj": "39.346.861/0001-61",
     "address": "R. Augusta, 2300 - Cerqueira César, São Paulo - SP",
     "phone_number": "(11) 99887-6543"
   },

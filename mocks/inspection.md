@@ -12,22 +12,22 @@ Inspeção registrada antes da aprovação de um `SupplyLot`. Só pode ser criad
 ```json
 [
   {
-    "responsible": 3,
+    "responsible": 4,
     "is_complete": false,
     "completion_date": null
   },
   {
-    "responsible": 3,
+    "responsible": 4,
     "is_complete": true,
     "completion_date": "2026-04-12"
   },
   {
-    "responsible": 3,
+    "responsible": 4,
     "is_complete": true,
     "completion_date": "2026-05-02"
   },
   {
-    "responsible": 3,
+    "responsible": 4,
     "is_complete": false,
     "completion_date": null
   }
