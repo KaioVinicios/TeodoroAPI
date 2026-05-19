@@ -19,7 +19,7 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 #: .\apps\account\choices.py:6
 msgid "Administrator"
-msgstr ""
+msgstr "Administrador"
 
 #: .\apps\account\choices.py:7
 msgid "Manager"
