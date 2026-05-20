@@ -3,12 +3,11 @@
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
-#, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-19 13:37-0300\n"
+"POT-Creation-Date: 2026-05-20 21:40+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,403 +16,527 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
-#: .\apps\account\choices.py:6
+
+#: apps/account/choices.py:6
 msgid "Administrator"
 msgstr "Administrador"
 
-#: .\apps\account\choices.py:7
+#: apps/account/choices.py:7
 msgid "Manager"
 msgstr "Gerente"
 
-#: .\apps\account\choices.py:8
-msgid "Technician"
-msgstr "Técnico"
-
-#: .\apps\account\choices.py:9
+#: apps/account/choices.py:8
 msgid "Auditor"
 msgstr "Auditor"
 
-#: .\apps\account\choices.py:10
+#: apps/account/choices.py:9
 msgid "Operator"
 msgstr "Operador"
 
-#: .\apps\account\choices.py:11
+#: apps/account/choices.py:11
 msgid "Customer"
 msgstr "Cliente"
 
-#: .\apps\account\models.py:16 .\apps\stock_movement\models.py:22
+#: apps/account/models.py:16 apps/request/models.py:14
+#: apps/stock_movement/models.py:22
 msgid "user"
 msgstr "usuário"
 
-#: .\apps\account\models.py:21
+#: apps/account/models.py:21
 msgid "account type"
 msgstr "tipo de conta"
 
-#: .\apps\account\models.py:30 .\apps\organization\models.py:31
+#: apps/account/models.py:30 apps/organization/models.py:31
 msgid "organization"
 msgstr "organização"
 
-#: .\apps\account\models.py:35
+#: apps/account/models.py:35
 msgid "CPF"
 msgstr "CPF"
 
-#: .\apps\account\models.py:37
+#: apps/account/models.py:37
 msgid "Format: XXX.XXX.XXX-XX"
 msgstr "Formato: XXX.XXX.XXX-XX"
 
-#: .\apps\account\models.py:41 .\apps\organization\models.py:21
+#: apps/account/models.py:41 apps/organization/models.py:21
 msgid "address"
 msgstr "endereço"
 
-#: .\apps\account\models.py:45 .\apps\organization\models.py:25
+#: apps/account/models.py:45 apps/organization/models.py:25
 msgid "phone number"
 msgstr "número de telefone"
 
-#: .\apps\account\models.py:47 .\apps\organization\models.py:27
+#: apps/account/models.py:47 apps/organization/models.py:27
 msgid "Format: (XX) XXXXX-XXXX"
 msgstr "Formato: (XX) XXXXX-XXXX"
 
-#: .\apps\account\models.py:51
+#: apps/account/models.py:51
 msgid "account"
 msgstr "conta"
 
-#: .\apps\account\models.py:52
+#: apps/account/models.py:52
 msgid "accounts"
 msgstr "contas"
 
-#: .\apps\account\validators.py:9
+#: apps/account/permissions.py:6
+msgid "Customers cannot access this resource."
+msgstr "Clientes não podem acessar este recurso."
+
+#: apps/account/serializers.py:69
+msgid "A user with this username already exists."
+msgstr "Já existe um usuário com este nome de usuário."
+
+#: apps/account/serializers.py:79
+msgid "A user with this email already exists."
+msgstr "Já existe um usuário com este e-mail."
+
+#: apps/account/validators.py:9
 msgid "Invalid account type."
 msgstr "Tipo de conta inválido."
 
-#: .\apps\account\validators.py:16
+#: apps/account/validators.py:16
 msgid "CPF must have 11 digits."
 msgstr "O CPF deve ter 11 dígitos."
 
-#: .\apps\account\validators.py:19 .\apps\account\validators.py:27
+#: apps/account/validators.py:19 apps/account/validators.py:27
 msgid "Invalid CPF."
 msgstr "CPF inválido."
 
-#: .\apps\core\admin.py:8
+#: apps/account/views.py:119
+msgid "Account created succefully."
+msgstr "Conta criada com sucesso."
+
+#: apps/account/views.py:197 apps/account/views.py:208
+#: apps/account/views.py:224
+msgid "Account not found"
+msgstr "Conta não encontrada"
+
+#: apps/authentication/views.py:91
+msgid "Authentication failed. Invalid response format."
+msgstr "Falha na autenticação. Formato de resposta inválido."
+
+#: apps/authentication/views.py:101
+msgid "Authentication failed. Tokens not generated."
+msgstr "Falha na autenticação. Tokens não gerados."
+
+#: apps/authentication/views.py:141
+msgid "Authentication successful"
+msgstr "Autenticação bem-sucedida"
+
+#: apps/authentication/views.py:146
+msgid "Authentication successful but failed to set cookies."
+msgstr "Autenticação bem-sucedida, mas falha ao definir os cookies."
+
+#: apps/authentication/views.py:155
+msgid "An unexpected error occurred during authentication."
+msgstr "Ocorreu um erro inesperado durante a autenticação."
+
+#: apps/authentication/views.py:197
+msgid "Refresh token is missing."
+msgstr "Token de atualização ausente."
+
+#: apps/authentication/views.py:208
+msgid "Refresh token is invalid or expired."
+msgstr "Token de atualização inválido ou expirado."
+
+#: apps/authentication/views.py:219
+msgid "Failed to refresh access token."
+msgstr "Falha ao atualizar o token de acesso."
+
+#: apps/authentication/views.py:224
+msgid "Token refreshed successfully"
+msgstr "Token atualizado com sucesso"
+
+#: apps/authentication/views.py:264
+msgid "Tokens refreshed but failed to set cookies."
+msgstr "Tokens atualizados, mas falha ao definir os cookies."
+
+#: apps/authentication/views.py:354
+msgid "Logout successful"
+msgstr "Logout realizado com sucesso"
+
+#: apps/core/admin.py:8
 msgid "Teodoro Administration"
 msgstr "Administração Teodoro"
 
-#: .\apps\core\admin.py:9
+#: apps/core/admin.py:9
 msgid "Teodoro Admin"
 msgstr "Admin Teodoro"
 
-#: .\apps\core\admin.py:10
+#: apps/core/admin.py:10
 msgid "Welcome to Teodoro Administration"
 msgstr "Bem-vindo à Administração Teodoro"
 
-#: .\apps\core\validators.py:10
+#: apps/core/validators.py:10
 msgid "Phone number must have 10 or 11 digits (with area code)."
 msgstr "O número de telefone deve ter 10 ou 11 dígitos (com DDD)."
 
-#: .\apps\core\validators.py:18
+#: apps/core/validators.py:18
 msgid "CNPJ must have 14 digits."
 msgstr "O CNPJ deve ter 14 dígitos."
 
-#: .\apps\core\validators.py:21 .\apps\core\validators.py:31
+#: apps/core/validators.py:21 apps/core/validators.py:31
 msgid "Invalid CNPJ."
 msgstr "CNPJ inválido."
 
-#: .\apps\inspection\admin.py:44 .\apps\inspection\services.py:36
+#: apps/inspection/admin.py:44 apps/inspection/services.py:36
 msgid "Cannot update an inspection that is already complete."
 msgstr "Não é possível atualizar uma inspeção que já está concluída."
 
-#: .\apps\inspection\models.py:11
+#: apps/inspection/models.py:11
 msgid "is complete"
 msgstr "está concluída"
 
-#: .\apps\inspection\models.py:16
+#: apps/inspection/models.py:16
 msgid "completion date"
 msgstr "data de conclusão"
 
-#: .\apps\inspection\models.py:22
+#: apps/inspection/models.py:22
 msgid "responsible"
 msgstr "responsável"
 
-#: .\apps\inspection\models.py:27 .\apps\supply_lot\models.py:23
+#: apps/inspection/models.py:27 apps/supply_lot/models.py:23
 msgid "inspection"
 msgstr "inspeção"
 
-#: .\apps\inspection\models.py:28
+#: apps/inspection/models.py:28
 msgid "inspections"
 msgstr "inspeções"
 
-#: .\apps\inspection\models.py:31
+#: apps/inspection/models.py:31
 msgid "complete"
 msgstr "concluída"
 
-#: .\apps\inspection\models.py:31
+#: apps/inspection/models.py:31
 msgid "pending"
 msgstr "pendente"
 
-#: .\apps\inspection\validators.py:14
+#: apps/inspection/permissions.py:8
+msgid "Only auditors can access this resource."
+msgstr "Apenas auditores podem acessar este recurso."
+
+#: apps/inspection/permissions.py:23
+msgid "Only auditors or admins can access this resource."
+msgstr "Apenas auditores ou administradores podem acessar este recurso."
+
+#: apps/inspection/validators.py:14
 msgid "Responsible user must have an account."
 msgstr "O usuário responsável deve ter uma conta."
 
-#: .\apps\inspection\validators.py:18
+#: apps/inspection/validators.py:18
 msgid "Responsible must be a user with account type 'auditor'."
 msgstr "O responsável deve ser um usuário com tipo de conta 'auditor'."
 
-#: .\apps\organization\models.py:10 .\apps\supply_label\models.py:17
+#: apps/organization/models.py:10 apps/supply_label/models.py:17
 msgid "name"
 msgstr "nome"
 
-#: .\apps\organization\models.py:15
+#: apps/organization/models.py:15
 msgid "CNPJ"
 msgstr "CNPJ"
 
-#: .\apps\organization\models.py:17
+#: apps/organization/models.py:17
 msgid "Format: XX.XXX.XXX/XXXX-XX"
 msgstr "Formato: XX.XXX.XXX/XXXX-XX"
 
-#: .\apps\organization\models.py:32
+#: apps/organization/models.py:32
 msgid "organizations"
 msgstr "organizações"
 
-#: .\apps\request\choices.py:6 .\apps\stock_movement\choices.py:6
-msgid "Entry"
-msgstr "Entrada"
+#: apps/organization/views.py:102
+msgid "Organization created successfully."
+msgstr "Organização criada com sucesso."
 
-#: .\apps\request\choices.py:7 .\apps\stock_movement\choices.py:7
-msgid "Exit"
-msgstr "Saída"
+#: apps/organization/views.py:183 apps/organization/views.py:194
+#: apps/organization/views.py:212
+msgid "Organization not found"
+msgstr "Organização não encontrada"
 
-#: .\apps\request\choices.py:8 .\apps\stock_movement\choices.py:8
-msgid "Adjustment"
-msgstr "Ajuste"
-
-#: .\apps\stock_movement\models.py:16
-msgid "type of movement"
-msgstr "tipo de movimentação"
-
-#: .\apps\stock_movement\models.py:28 .\apps\supply\models.py:46
-msgid "supply"
-msgstr "insumo"
-
-#: .\apps\stock_movement\models.py:33 .\apps\supply_lot\models.py:37
-msgid "supply lots"
-msgstr "lotes de insumo"
-
-#: .\apps\stock_movement\models.py:39
-msgid "request"
-msgstr "solicitação"
-
-#: .\apps\stock_movement\models.py:42
-msgid "quantity"
-msgstr "quantidade"
-
-#: .\apps\stock_movement\models.py:45 .\apps\supply\models.py:26
-#: .\apps\supply_lot\models.py:32
+#: apps/request/admin.py:32 apps/request/models.py:29
+#: apps/stock_movement/admin.py:35 apps/stock_movement/models.py:45
+#: apps/supply/admin.py:33 apps/supply/models.py:26 apps/supply_lot/admin.py:25
+#: apps/supply_lot/models.py:32
 msgid "description"
 msgstr "descrição"
 
-#: .\apps\stock_movement\models.py:51
+#: apps/request/choices.py:6 apps/stock_movement/choices.py:6
+msgid "Entry"
+msgstr "Entrada"
+
+#: apps/request/choices.py:7 apps/stock_movement/choices.py:7
+msgid "Exit"
+msgstr "Saída"
+
+#: apps/request/choices.py:8 apps/stock_movement/choices.py:8
+msgid "Adjustment"
+msgstr "Ajuste"
+
+#: apps/request/models.py:19
+msgid "request type"
+msgstr "tipo de solicitação"
+
+#: apps/request/models.py:25 apps/stock_movement/models.py:28
+#: apps/supply/models.py:46
+msgid "supply"
+msgstr "insumo"
+
+#: apps/request/models.py:33
+msgid "is approved"
+msgstr "está aprovada"
+
+#: apps/request/models.py:38
+msgid "approval date"
+msgstr "data de aprovação"
+
+#: apps/request/models.py:41 apps/stock_movement/models.py:42
+msgid "quantity"
+msgstr "quantidade"
+
+#: apps/request/models.py:45 apps/stock_movement/models.py:39
+msgid "request"
+msgstr "solicitação"
+
+#: apps/request/models.py:46
+msgid "requests"
+msgstr "solicitações"
+
+#: apps/request/serializers.py:14
+msgid "Quantity must be greater than zero."
+msgstr "A quantidade deve ser maior que zero."
+
+#: apps/request/views.py:140 apps/request/views.py:152
+#: apps/request/views.py:170
+msgid "Request not found"
+msgstr "Solicitação não encontrada"
+
+#: apps/stock_movement/models.py:16
+msgid "type of movement"
+msgstr "tipo de movimentação"
+
+#: apps/stock_movement/models.py:33 apps/supply_lot/models.py:37
+msgid "supply lots"
+msgstr "lotes de insumo"
+
+#: apps/stock_movement/models.py:51
 msgid "stock movement"
 msgstr "movimentação de estoque"
 
-#: .\apps\stock_movement\models.py:52
+#: apps/stock_movement/models.py:52
 msgid "stock movements"
 msgstr "movimentações de estoque"
 
-#: .\apps\stock_movement\models.py:72 .\apps\stock_movement\validators.py:9
+#: apps/stock_movement/models.py:72 apps/stock_movement/validators.py:9
 msgid "Stock movement requires an approved request."
 msgstr "A movimentação de estoque requer uma solicitação aprovada."
 
-#: .\apps\stock_movement\validators.py:16
+#: apps/stock_movement/validators.py:16
 msgid "This request already has a stock movement."
 msgstr "Esta solicitação já possui uma movimentação de estoque."
 
-#: .\apps\stock_movement\validators.py:23
+#: apps/stock_movement/validators.py:23
 msgid "At least one supply lot is required."
 msgstr "Pelo menos um lote de insumo é obrigatório."
 
-#: .\apps\stock_movement\validators.py:30
+#: apps/stock_movement/validators.py:30
 msgid "All supply lots must be approved."
 msgstr "Todos os lotes de insumo devem ser aprovados."
 
-#: .\apps\supply\choices.py:6
+#: apps/stock_movement/views.py:144 apps/stock_movement/views.py:155
+msgid "Stock movement not found"
+msgstr "Movimentação de estoque não encontrada"
+
+#: apps/supply/choices.py:6
 msgid "Available"
 msgstr "Disponível"
 
-#: .\apps\supply\choices.py:7
+#: apps/supply/choices.py:7
 msgid "Unavailable"
 msgstr "Indisponível"
 
-#: .\apps\supply\choices.py:8
+#: apps/supply/choices.py:8
 msgid "Reserved"
 msgstr "Reservado"
 
-#: .\apps\supply\choices.py:9
+#: apps/supply/choices.py:9
 msgid "In Use"
 msgstr "Em Uso"
 
-#: .\apps\supply\choices.py:10
+#: apps/supply/choices.py:10
 msgid "Depleted"
 msgstr "Esgotado"
 
-#: .\apps\supply\choices.py:11
+#: apps/supply/choices.py:11
 msgid "Damaged"
 msgstr "Danificado"
 
-#: .\apps\supply\choices.py:15
+#: apps/supply/choices.py:15
 msgid "Unit"
 msgstr "Unidade"
 
-#: .\apps\supply\choices.py:16
+#: apps/supply/choices.py:16
 msgid "Box"
 msgstr "Caixa"
 
-#: .\apps\supply\choices.py:17
+#: apps/supply/choices.py:17
 msgid "Pack"
 msgstr "Pacote"
 
-#: .\apps\supply\choices.py:18
+#: apps/supply/choices.py:18
 msgid "Bottle"
 msgstr "Frasco"
 
-#: .\apps\supply\choices.py:19
+#: apps/supply/choices.py:19
 msgid "Liter"
 msgstr "Litro"
 
-#: .\apps\supply\choices.py:20
+#: apps/supply/choices.py:20
 msgid "Milliliter"
 msgstr "Mililitro"
 
-#: .\apps\supply\choices.py:21
+#: apps/supply/choices.py:21
 msgid "Gram"
 msgstr "Grama"
 
-#: .\apps\supply\choices.py:22
+#: apps/supply/choices.py:22
 msgid "Kilogram"
 msgstr "Quilograma"
 
-#: .\apps\supply\models.py:16
+#: apps/supply/models.py:16
 msgid "supply label"
 msgstr "rótulo do insumo"
 
-#: .\apps\supply\models.py:22 .\apps\supply_lot\models.py:16
+#: apps/supply/models.py:22 apps/supply_lot/models.py:16
 msgid "status"
 msgstr "status"
 
-#: .\apps\supply\models.py:31
+#: apps/supply/models.py:31
 msgid "unit of measure"
 msgstr "unidade de medida"
 
-#: .\apps\supply\models.py:47
+#: apps/supply/models.py:47
 msgid "supplies"
 msgstr "insumos"
 
-#: .\apps\supply\validators.py:9
+#: apps/supply/validators.py:9
 msgid "Invalid supply status."
 msgstr "Status de insumo inválido."
 
-#: .\apps\supply\validators.py:14
+#: apps/supply/validators.py:14
 msgid "Invalid unit of measure."
 msgstr "Unidade de medida inválida."
 
-#: .\apps\supply_label\choices.py:6
-msgid "Medication"
-msgstr "Medicamento"
-
-#: .\apps\supply_label\choices.py:7
-msgid "Equipment"
-msgstr "Equipamento"
-
-#: .\apps\supply_label\choices.py:8
-msgid "Sterilization"
-msgstr "Esterilização"
-
-#: .\apps\supply_label\choices.py:9
-msgid "Nutrition"
-msgstr "Nutrição"
-
-#: .\apps\supply_label\choices.py:10
-msgid "Blood Product"
-msgstr "Hemoderivado"
-
-#: .\apps\supply_label\choices.py:11 .\apps\supply_label\choices.py:20
-msgid "Other"
-msgstr "Outro"
-
-#: .\apps\supply_label\choices.py:15
-msgid "Disposable"
-msgstr "Descartável"
-
-#: .\apps\supply_label\choices.py:16
-msgid "Reusable"
-msgstr "Reutilizável"
-
-#: .\apps\supply_label\choices.py:17
-msgid "Implantable"
-msgstr "Implantável"
-
-#: .\apps\supply_label\choices.py:18
-msgid "Diagnostic"
-msgstr "Diagnóstico"
-
-#: .\apps\supply_label\choices.py:19
-msgid "Therapeutic"
-msgstr "Terapêutico"
-
-#: .\apps\supply_label\models.py:27
-msgid "supply type"
-msgstr "tipo de insumo"
-
-#: .\apps\supply_label\models.py:36
-msgid "category"
-msgstr "categoria"
-
-#: .\apps\supply_label\models.py:41
-msgid "details"
-msgstr "detalhes"
-
-#: .\apps\supply_label\validators.py:7
+#: apps/supply_label/admin.py:23 apps/supply_label/validators.py:7
 msgid "Invalid supply type."
 msgstr "Tipo de insumo inválido."
 
-#: .\apps\supply_label\validators.py:12
+#: apps/supply_label/admin.py:29 apps/supply_label/validators.py:12
 msgid "Invalid category."
 msgstr "Categoria inválida."
 
-#: .\apps\supply_lot\choices.py:6
+#: apps/supply_label/choices.py:6
+msgid "Medication"
+msgstr "Medicamento"
+
+#: apps/supply_label/choices.py:7
+msgid "Equipment"
+msgstr "Equipamento"
+
+#: apps/supply_label/choices.py:8
+msgid "Sterilization"
+msgstr "Esterilização"
+
+#: apps/supply_label/choices.py:9
+msgid "Nutrition"
+msgstr "Nutrição"
+
+#: apps/supply_label/choices.py:10
+msgid "Blood Product"
+msgstr "Hemoderivado"
+
+#: apps/supply_label/choices.py:11 apps/supply_label/choices.py:20
+msgid "Other"
+msgstr "Outro"
+
+#: apps/supply_label/choices.py:15
+msgid "Disposable"
+msgstr "Descartável"
+
+#: apps/supply_label/choices.py:16
+msgid "Reusable"
+msgstr "Reutilizável"
+
+#: apps/supply_label/choices.py:17
+msgid "Implantable"
+msgstr "Implantável"
+
+#: apps/supply_label/choices.py:18
+msgid "Diagnostic"
+msgstr "Diagnóstico"
+
+#: apps/supply_label/choices.py:19
+msgid "Therapeutic"
+msgstr "Terapêutico"
+
+#: apps/supply_label/models.py:27
+msgid "supply type"
+msgstr "tipo de insumo"
+
+#: apps/supply_label/models.py:36
+msgid "category"
+msgstr "categoria"
+
+#: apps/supply_label/models.py:41
+msgid "details"
+msgstr "detalhes"
+
+#: apps/supply_label/views.py:98 apps/supply_label/views.py:119
+#: apps/supply_label/views.py:129
+msgid "Supply Label not found"
+msgstr "Rótulo de insumo não encontrado"
+
+#: apps/supply_lot/choices.py:6
 msgid "Pending"
 msgstr "Pendente"
 
-#: .\apps\supply_lot\choices.py:7
+#: apps/supply_lot/choices.py:7
 msgid "Approved"
 msgstr "Aprovado"
 
-#: .\apps\supply_lot\choices.py:8
+#: apps/supply_lot/choices.py:8
 msgid "Rejected"
 msgstr "Rejeitado"
 
-#: .\apps\supply_lot\choices.py:9
+#: apps/supply_lot/choices.py:9
 msgid "Quarantine"
 msgstr "Quarentena"
 
-#: .\apps\supply_lot\choices.py:10
+#: apps/supply_lot/choices.py:10
 msgid "Expired"
 msgstr "Vencido"
 
-#: .\apps\supply_lot\models.py:26
+#: apps/supply_lot/models.py:26
 msgid "manufacturing date"
 msgstr "data de fabricação"
 
-#: .\apps\supply_lot\models.py:29
+#: apps/supply_lot/models.py:29
 msgid "expiration date"
 msgstr "data de validade"
 
-#: .\apps\supply_lot\models.py:36
+#: apps/supply_lot/models.py:36
 msgid "supply lot"
 msgstr "lote de insumo"
 
-#: .\apps\supply_lot\validators.py:8
+#: apps/supply_lot/validators.py:8
 msgid "Invalid supply lot status."
 msgstr "Status de lote de insumo inválido."
 
-#: .\apps\supply_lot\validators.py:14
+#: apps/supply_lot/validators.py:14
 msgid "Manufacturing date must be before expiration date."
 msgstr "A data de fabricação deve ser anterior à data de validade."
+
+#: apps/supply_lot/views.py:138
+msgid "Supply lot not found."
+msgstr "Lote de insumo não encontrado."
+
+#~ msgid "Technician"
+#~ msgstr "Técnico"
