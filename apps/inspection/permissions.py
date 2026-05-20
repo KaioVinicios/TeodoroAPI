@@ -1,10 +1,11 @@
+from django.utils.translation import gettext_lazy as _
 from rest_framework.permissions import BasePermission
 
 from apps.account.choices import AccountType
 
 
 class IsAuditor(BasePermission):
-    message = "Only auditors can access this resource."
+    message = _("Only auditors can access this resource.")
 
     def has_permission(self, request, view):
         user = request.user
@@ -19,7 +20,7 @@ class IsAuditor(BasePermission):
 
 
 class IsAuditorOrAdmin(BasePermission):
-    message = "Only auditors or admins can access this resource."
+    message = _("Only auditors or admins can access this resource.")
 
     def has_permission(self, request, view):
         user = request.user

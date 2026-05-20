@@ -1,6 +1,7 @@
 import logging
 from datetime import timedelta
 from django.conf import settings
+from django.utils.translation import gettext_lazy as _
 from rest_framework import permissions, serializers
 from rest_framework import status
 from rest_framework.views import APIView
@@ -87,7 +88,7 @@ class CookieObtainPairView(TokenObtainPairView):
             if not hasattr(response, "data") or not isinstance(response.data, dict):
                 logger.error("Invalid response data format from TokenObtainPairView")
                 return Response(
-                    {"error": "Authentication failed. Invalid response format."},
+                    {"error": _("Authentication failed. Invalid response format.")},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 )
 
@@ -97,7 +98,7 @@ class CookieObtainPairView(TokenObtainPairView):
             if not access or not refresh:
                 logger.error("Missing tokens in authentication response")
                 return Response(
-                    {"error": "Authentication failed. Tokens not generated."},
+                    {"error": _("Authentication failed. Tokens not generated.")},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 )
 
@@ -137,12 +138,12 @@ class CookieObtainPairView(TokenObtainPairView):
                     path=cookie_path,
                 )
 
-                response.data = {"message": "Authentication successful"}
+                response.data = {"message": _("Authentication successful")}
 
             except Exception as e:
                 logger.error(f"Error setting cookies: {str(e)}")
                 return Response(
-                    {"error": "Authentication successful but failed to set cookies."},
+                    {"error": _("Authentication successful but failed to set cookies.")},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 )
 
@@ -151,7 +152,7 @@ class CookieObtainPairView(TokenObtainPairView):
         except Exception as e:
             logger.error(f"Unexpected error in CookieObtainPairView: {str(e)}")
             return Response(
-                {"error": "An unexpected error occurred during authentication."},
+                {"error": _("An unexpected error occurred during authentication.")},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -193,7 +194,7 @@ class CookieRefreshTokenView(TokenRefreshView):
         if not refresh_token:
             logger.warning("Refresh token not provided.")
             return Response(
-                {"error": "Refresh token is missing."},
+                {"error": _("Refresh token is missing.")},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
@@ -204,7 +205,7 @@ class CookieRefreshTokenView(TokenRefreshView):
         except TokenError as error:
             logger.warning(f"Invalid refresh token: {error}")
             return Response(
-                {"error": "Refresh token is invalid or expired."},
+                {"error": _("Refresh token is invalid or expired.")},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
@@ -215,12 +216,12 @@ class CookieRefreshTokenView(TokenRefreshView):
         if not access:
             logger.error("Refresh endpoint did not return an access token.")
             return Response(
-                {"error": "Failed to refresh access token."},
+                {"error": _("Failed to refresh access token.")},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
         response = Response(
-            {"message": "Token refreshed successfully"}, status=status.HTTP_200_OK
+            {"message": _("Token refreshed successfully")}, status=status.HTTP_200_OK
         )
 
         try:
@@ -260,7 +261,7 @@ class CookieRefreshTokenView(TokenRefreshView):
         except Exception as error:
             logger.error(f"Error setting refresh cookies: {error}")
             return Response(
-                {"error": "Tokens refreshed but failed to set cookies."},
+                {"error": _("Tokens refreshed but failed to set cookies.")},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -350,7 +351,7 @@ class CookieLogoutView(APIView):
                 pass  # Need to handle this exception in a better way.
 
         response = Response(
-            {"detail": "Logout successful"}, status=status.HTTP_205_RESET_CONTENT
+            {"detail": _("Logout successful")}, status=status.HTTP_205_RESET_CONTENT
         )
 
         response.delete_cookie(

@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.utils.translation import gettext_lazy as _
 
 from apps.supply.models import Supply
 
@@ -29,7 +30,7 @@ class SupplyAdmin(admin.ModelAdmin):
     )
     ordering = ("supply_label__name",)
 
-    @admin.display(description="description")
+    @admin.display(description=_("description"))
     def short_description(self, obj):
         if not obj.description:
             return ""

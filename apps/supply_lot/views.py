@@ -1,4 +1,5 @@
 from django.http import Http404
+from django.utils.translation import gettext_lazy as _
 from rest_framework import status, serializers
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -134,7 +135,7 @@ class SupplyLotDetailAPIView(APIView):
     def handle_exception(self, exc):
         if isinstance(exc, Http404):
             return Response(
-                {"error": "SupplyLot não encontrado."},
+                {"error": _("Supply lot not found.")},
                 status=status.HTTP_404_NOT_FOUND,
             )
         return super().handle_exception(exc)

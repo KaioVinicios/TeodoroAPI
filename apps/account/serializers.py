@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from apps.account.models import Account
@@ -65,7 +66,7 @@ class AccountSerializer(serializers.ModelSerializer):
             qs = qs.exclude(pk=self.instance.user_id)
         if qs.exists():
             raise serializers.ValidationError(
-                "A user with this username already exists."
+                _("A user with this username already exists.")
             )
         return value
 
@@ -75,6 +76,6 @@ class AccountSerializer(serializers.ModelSerializer):
             qs = qs.exclude(pk=self.instance.user_id)
         if qs.exists():
             raise serializers.ValidationError(
-                "A user with this email already exists."
+                _("A user with this email already exists.")
             )
         return value

@@ -1,4 +1,5 @@
 from django.http import Http404
+from django.utils.translation import gettext_lazy as _
 from rest_framework import status, serializers
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -136,7 +137,7 @@ class RequestDetailAPIView(APIView):
             request_obj = RequestServices.get(pk)
         except Http404:
             return Response(
-                {"error": "Request not found"},
+                {"error": _("Request not found")},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
@@ -148,7 +149,7 @@ class RequestDetailAPIView(APIView):
             request_obj = RequestServices.get(pk)
         except Http404:
             return Response(
-                {"error": "Request not found"},
+                {"error": _("Request not found")},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
@@ -166,7 +167,7 @@ class RequestDetailAPIView(APIView):
             RequestServices.delete(pk)
         except Http404:
             return Response(
-                {"error": "Request not found"},
+                {"error": _("Request not found")},
                 status=status.HTTP_404_NOT_FOUND,
             )
 

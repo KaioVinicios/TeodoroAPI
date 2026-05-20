@@ -1,4 +1,5 @@
 from django.http import Http404
+from django.utils.translation import gettext_lazy as _
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -94,7 +95,7 @@ class SupplyLabelDetailAPIView(APIView):
 
         except Http404:
             return Response(
-                {"error": "Supply Label not found"}, status=status.HTTP_404_NOT_FOUND
+                {"error": _("Supply Label not found")}, status=status.HTTP_404_NOT_FOUND
             )
 
     def patch(self, request, pk):
@@ -115,7 +116,7 @@ class SupplyLabelDetailAPIView(APIView):
 
         except Http404:
             return Response(
-                {"error": "Supply Label not found"}, status=status.HTTP_404_NOT_FOUND
+                {"error": _("Supply Label not found")}, status=status.HTTP_404_NOT_FOUND
             )
 
     def delete(self, request, pk):
@@ -125,5 +126,5 @@ class SupplyLabelDetailAPIView(APIView):
 
         except Http404:
             return Response(
-                {"error": "Supply Label not found"}, status=status.HTTP_404_NOT_FOUND
+                {"error": _("Supply Label not found")}, status=status.HTTP_404_NOT_FOUND
             )

@@ -1,4 +1,5 @@
 from django.http import Http404
+from django.utils.translation import gettext_lazy as _
 from rest_framework import status, serializers
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -106,7 +107,7 @@ class AccountListAPIView(APIView):
         account = AccountServices.create(serializer.validated_data)
         response = AccountSerializer(account)
         return Response(
-            {"message": "Account created succefully.", "data": response.data},
+            {"message": _("Account created succefully."), "data": response.data},
             status=status.HTTP_201_CREATED,
         )
 
@@ -184,7 +185,7 @@ class AccountDetailAPIView(APIView):
             account = AccountServices.get(pk)
         except Http404:
             return Response(
-                {"error": "Account not found"},
+                {"error": _("Account not found")},
                 status=status.HTTP_404_NOT_FOUND,
             )
         serializer = AccountSerializer(account)
@@ -195,7 +196,7 @@ class AccountDetailAPIView(APIView):
             account = AccountServices.get(pk)
         except Http404:
             return Response(
-                {"error": "Account not found"},
+                {"error": _("Account not found")},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
@@ -211,7 +212,7 @@ class AccountDetailAPIView(APIView):
             AccountServices.delete(pk)
         except Http404:
             return Response(
-                {"error": "Account not found"},
+                {"error": _("Account not found")},
                 status=status.HTTP_404_NOT_FOUND,
             )
         return Response(status=status.HTTP_204_NO_CONTENT)

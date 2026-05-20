@@ -1,5 +1,6 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.http import Http404
+from django.utils.translation import gettext_lazy as _
 from rest_framework import status, serializers
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -140,7 +141,7 @@ class StockMovementDetailAPIView(APIView):
             movement = StockMovementServices.get(pk)
         except Http404:
             return Response(
-                {"error": "Stock movement not found"},
+                {"error": _("Stock movement not found")},
                 status=status.HTTP_404_NOT_FOUND,
             )
         serializer = StockMovementSerializer(movement)
@@ -151,7 +152,7 @@ class StockMovementDetailAPIView(APIView):
             movement = StockMovementServices.get(pk)
         except Http404:
             return Response(
-                {"error": "Stock movement not found"},
+                {"error": _("Stock movement not found")},
                 status=status.HTTP_404_NOT_FOUND,
             )
         serializer = StockMovementSerializer(

@@ -1,4 +1,5 @@
 from django.http import Http404
+from django.utils.translation import gettext_lazy as _
 from rest_framework import status, serializers
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -98,7 +99,7 @@ class OrganizationListAPIView(APIView):
         organization = OrganizationServices.create(serializer.validated_data)
         response = OrganizationSerializer(organization)
         return Response(
-            {"message": "Organization created successfully.", "data": response.data},
+            {"message": _("Organization created successfully."), "data": response.data},
             status=status.HTTP_201_CREATED,
         )
 
@@ -179,7 +180,7 @@ class OrganizationDetailAPIView(APIView):
             organization = OrganizationServices.get(pk)
         except Http404:
             return Response(
-                {"error": "Organization not found"},
+                {"error": _("Organization not found")},
                 status=status.HTTP_404_NOT_FOUND,
             )
         serializer = OrganizationSerializer(organization)
@@ -190,7 +191,7 @@ class OrganizationDetailAPIView(APIView):
             organization = OrganizationServices.get(pk)
         except Http404:
             return Response(
-                {"error": "Organization not found"},
+                {"error": _("Organization not found")},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
@@ -208,7 +209,7 @@ class OrganizationDetailAPIView(APIView):
             OrganizationServices.delete(pk)
         except Http404:
             return Response(
-                {"error": "Organization not found"},
+                {"error": _("Organization not found")},
                 status=status.HTTP_404_NOT_FOUND,
             )
         return Response(status=status.HTTP_204_NO_CONTENT)

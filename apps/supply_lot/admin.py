@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.utils.translation import gettext_lazy as _
 
 from apps.supply_lot.models import SupplyLot
 
@@ -21,7 +22,7 @@ class SupplyLotAdmin(admin.ModelAdmin):
     ordering = ("-manufacturing_date",)
     date_hierarchy = "expiration_date"
 
-    @admin.display(description="description")
+    @admin.display(description=_("description"))
     def short_description(self, obj):
         if not obj.description:
             return ""

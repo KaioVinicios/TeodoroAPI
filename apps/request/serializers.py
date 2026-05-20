@@ -1,3 +1,4 @@
+from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 from apps.request.models import Request
 
@@ -10,6 +11,6 @@ class RequestSerializer(serializers.ModelSerializer):
 
     def validate_quantity(self, value):
         if value <= 0:
-            raise serializers.ValidationError("Quantity must be greater than zero.")
+            raise serializers.ValidationError(_("Quantity must be greater than zero."))
         return value
 

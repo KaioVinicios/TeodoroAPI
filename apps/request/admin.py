@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.utils.translation import gettext_lazy as _
 
 from apps.request.models import Request
 
@@ -28,7 +29,7 @@ class RequestAdmin(admin.ModelAdmin):
     readonly_fields = ("created_at", "updated_at")
     ordering = ("-created_at",)
 
-    @admin.display(description="description")
+    @admin.display(description=_("description"))
     def short_description(self, obj):
         if not obj.description:
             return ""

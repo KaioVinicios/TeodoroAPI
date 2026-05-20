@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib import admin
+from django.utils.translation import gettext_lazy as _
 
 from apps.supply_label.choices import SupplyLabelCategory, SupplyLabelType
 from apps.supply_label.models import SupplyLabel
@@ -19,13 +20,13 @@ class SupplyLabelAdminForm(forms.ModelForm):
     def clean_supply_label_type(self):
         value = self.cleaned_data.get("supply_label_type")
         if value not in SupplyLabelType.values:
-            raise forms.ValidationError("Invalid supply type.")
+            raise forms.ValidationError(_("Invalid supply type."))
         return value
 
     def clean_category(self):
         value = self.cleaned_data.get("category")
         if value not in SupplyLabelCategory.values:
-            raise forms.ValidationError("Invalid category.")
+            raise forms.ValidationError(_("Invalid category."))
         return value
 
 
